@@ -1,0 +1,99 @@
+from fastapi import APIRouter, HTTPException, status, Depends, Query
+from typing import List, Optional
+
+from server.schemas.student import StudentCreate, StudentPublic, StudentUpdate
+from server.crud import student as crud_student
+from server.crud import user as crud_user
+from server.core.auth import get_current_user # This dependency provides the current logged-in user
+
+router = APIRouter()
+
+@router.post("/students/", response_model=StudentPublic, status_code=status.HTTP_201_CREATED)
+async def create_student_endpoint(
+    student_in: StudentCreate,
+    current_user: dict = Depends(get_current_user) # Get the current authenticated user
+):
+    """
+    Create a new student record.
+    Requires authentication. The creator is automatically set to the current user.
+    """
+    # If an assigned_counselor_id is provided, ensure it's a valid user
+    if student_in.assigned_counselor_id:
+        counselor_exists = await crud_user.get_user_by_id(str(student_in.assigned_counselor_id))
+        if not counselor_exists:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Assigned counselor with ID {student_in.assigned_counselor_id} not found."
+            )
+
+    try:
+        creator_user_obj = await crud_user.get_user_by_id(current_user["id"])
+        if not creator_user_obj:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Creator user not found in DB.")
+
+        student = await crud_student.create_student(student_in, creator_user_obj)
+        return student
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to create student: {e}")
+
+@router.get("/students",response_model=List[StudentPublic])
+async def read_student_endpoint(
+    skip: int = Query(0,ge=0),
+    limit: int = Query(10, le=10),
+    populate_counselor: bool = Query(True, description="Include full counselor details"),
+    populate_creator: bool = Query(False, description="Include full creator details"), # NEW Query param
+    current_user: dict = Depends(get_current_user)
+):
+    students = await crud_student.get_all_students(
+        current_user_id=current_user["id"],
+        current_user_role=current_user["role"],
+        skip=skip,
+        limit=limit,
+        populate_counselor=populate_counselor,
+        populate_creator=populate_creator
+    )
+    return students
+
+@router.get("/students/{student_id}", response_model=StudentPublic)
+async def read_student_by_id_endpoint(
+    student_id: str,
+    populate_counselor: bool = Query(True, description="Include full counselor details"),
+    populate_creator: bool = Query(False, description="Include full creator details"), # NEW Query param
+    current_user: dict = Depends(get_current_user) # Get the current authenticated user
+):
+
+    student = await crud_student.get_student_by_id(
+        student_id,
+        current_user_id=current_user["id"],
+        current_user_role=current_user["role"],
+        populate_counselor=populate_counselor,
+        populate_creator=populate_creator
+    )
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found or unauthorized access.")
+    
+    return student
+
+@router.patch("/students/{student_id}", response_model=StudentPublic)
+async def update_student_endpoint(
+    student_id: str,
+    student_update: StudentUpdate, # Use the StudentUpdate schema for partial updates
+    current_user: dict = Depends(get_current_user) # Requires authentication
+):
+
+    try:
+        updated_student = await crud_student.update_student(
+            student_id,
+            student_update,
+            current_user["id"],
+            current_user["role"]
+        )
+        if not updated_student:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found or unauthorized access.")
+        return updated_student
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to update student: {e}")
