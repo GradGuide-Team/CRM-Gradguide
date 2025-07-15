@@ -8,7 +8,7 @@ from server.core.auth import get_current_user # This dependency provides the cur
 
 router = APIRouter()
 
-@router.post("/students/", response_model=StudentPublic, status_code=status.HTTP_201_CREATED)
+@router.post("/students", response_model=StudentPublic, status_code=status.HTTP_201_CREATED)
 async def create_student_endpoint(
     student_in: StudentCreate,
     current_user: dict = Depends(get_current_user) # Get the current authenticated user

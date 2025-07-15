@@ -1,4 +1,4 @@
-//client\src\app\(auth)\login\page.tsx
+//client\src\app\(auth)\Register\page.tsx
 "use client"
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
@@ -11,19 +11,19 @@ import { GraduationCap } from 'lucide-react';
 import React from 'react'
 import Link from 'next/link';
 
-const Login = () => {
+const Register = () => {
     const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
     const [password, setPassword] = useState('');
-    const { login, loading } = useAuth();
+    const { signup, loading } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await login(email, password);
+            await signup(name, email, password);
         } catch (error) {
         }
     };
-
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-700 via-purple-700 to-indigo-900 flex items-center justify-center p-4 relative overflow-hidden">
@@ -47,6 +47,21 @@ const Login = () => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <Label htmlFor="name" className="block text-sm font-medium text-white/90 mb-2">
+                                Full Name
+                            </Label>
+                            <Input
+                                id="name"
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="John Doe"
+                                required
+                                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/60 focus:bg-white/20 focus:border-white/40 transition-all duration-200"
+                            />
+                        </div>
+
                         <div>
                             <Label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
                                 Email Address
@@ -93,9 +108,9 @@ const Login = () => {
                         </Button>
                     </form>
                     <div className="mt-6 text-center flex justify-center items-center space-x-2">
-                        <p className="text-sm text-white/70">Don't have an account? </p>
-                        <Link href="/register" className="text-sm hover:underline hover:cursor-pointer">
-                            Signup
+                        <p className="text-sm text-white/70">Already have an account? </p>
+                        <Link href="/login" className="text-sm hover:underline hover:cursor-pointer">
+                            Login
                         </Link>
                     </div>
                     {/* Footer */}
@@ -108,5 +123,5 @@ const Login = () => {
     );
 }
 
-export default Login
+export default Register
 
