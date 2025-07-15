@@ -44,11 +44,6 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-# --- JWT Token Response ---
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
 # --- User Public Data (for Responses, excludes password_hash) ---
 class UserPublic(BaseModel):
     model_config = ConfigDict(
@@ -61,3 +56,8 @@ class UserPublic(BaseModel):
     name: str
     email: EmailStr
     role: Literal["admin", "member"]
+# --- JWT Token Response ---
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserPublic
