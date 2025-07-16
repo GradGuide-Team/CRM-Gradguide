@@ -207,3 +207,29 @@ async def update_student(
     student.reload()
 
     return StudentPublic.model_validate(student.to_public_dict())
+
+async def delete_student(
+    student_id: str,
+    current_user_id: str,
+    current_user_role: str
+) -> bool:
+    """
+    Delete a student record.
+    Returns True if successful, False if student not found or unauthorized.
+    """
+    if not ObjectId.is_valid(student_id):
+        return False
+    
+    query_set = Student.objects(id=student_id)
+    
+    # Apply role-based filtering - members can only delete their own students
+    if current_user_role == "member":
+        query_set = query_set.filter(created_by=ObjectId(current_user_id))
+    
+    student = query_set.first()
+    if not student:
+        return False
+    
+    # Delete the student
+    student.delete()
+    return True
