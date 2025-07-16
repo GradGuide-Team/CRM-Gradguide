@@ -97,3 +97,36 @@ async def update_student_endpoint(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to update student: {e}")
+
+@router.delete("/students/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_student_endpoint(
+    student_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        success = await crud_student.delete_student(
+            student_id,
+            current_user["id"],
+            current_user["role"]
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Student not found or unauthorized access."
+            )
+        
+        return None  # 204 No Content
+
+    except HTTPException as e:
+        raise e
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Failed to delete student: {e}"
+        )
