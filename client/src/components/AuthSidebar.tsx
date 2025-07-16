@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // client/src/components/AuthSidebar.tsx
 "use client";
 import React from "react";
@@ -10,13 +11,12 @@ import {
 } from "@/components/ui/sidebar";
 import {
     IconBriefcase,
-    IconUsers,
     IconUser,
     IconLogout,
     IconDashboard,
     IconBook2 // Added for Students
 } from "@tabler/icons-react";
-import Image from "next/image";
+// import Image from "next/image";
 import { motion } from "framer-motion"; // Remove animate from import
 
 interface UserData {
@@ -33,7 +33,7 @@ interface AuthSidebarProps {
 }
 
 // Create a component that uses the sidebar context
-const SidebarContent = ({ user, onLogout, pathname, router }: {
+const SidebarContent = ({ user, pathname, router }: {
     user: UserData | null;
     onLogout: () => void;
     pathname: string;
@@ -44,7 +44,7 @@ const SidebarContent = ({ user, onLogout, pathname, router }: {
     const navItems = [
         {
             label: "Dashboard",
-            href: "/dashboard",
+            href: "/",
             icon: <IconDashboard className="text-white h-5 w-5 shrink-0" />,
         },
         {
@@ -64,7 +64,7 @@ const SidebarContent = ({ user, onLogout, pathname, router }: {
         },
     ];
 
-    const filteredNavItems = navItems.filter(item => {
+    const filteredNavItems = navItems.filter(() => {
         return true;
     });
 
@@ -81,15 +81,15 @@ const SidebarContent = ({ user, onLogout, pathname, router }: {
         router.push(href);
     };
 
-    const handleLogout = () => {
-        if (confirm("Are you sure you want to logout?")) {
-            onLogout();
-        }
-    };
+    // const handleLogout = () => {
+    //     if (confirm("Are you sure you want to logout?")) {
+    //         onLogout();
+    //     }
+    // };
 
     return (
         <div className="flex flex-col overflow-y-auto overflow-x-hidden">
-            <div className="mb-10">
+            <div className="mb-1">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm shrink-0">
                         <span className="text-white font-bold text-lg">🎓</span>
@@ -191,7 +191,7 @@ export const AuthSidebar = ({ children, user, onLogout }: AuthSidebarProps) => {
                                 link={{
                                     label: "Logout",
                                     href: "#",
-                                    icon: <IconLogout className="text-red-300 h-5 w-5 ml-1 shrink-0" />,
+                                    icon: <IconLogout className="text-red-300 h-5 w-5 ml-3 shrink-0 " />,
                                 }}
                                 className="hover:bg-transparent rounded-xl"
                             />
