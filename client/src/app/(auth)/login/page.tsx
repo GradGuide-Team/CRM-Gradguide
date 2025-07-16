@@ -1,6 +1,6 @@
 //client\src\app\(auth)\login\page.tsx
 "use client"
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { GraduationCap } from 'lucide-react';
 
 import React from 'react'
 import Link from 'next/link';
+import { withAuth } from '@/wrapper/authWrapper';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -21,6 +22,7 @@ const Login = () => {
         try {
             await login(email, password);
         } catch (error) {
+            console.error(error);
         }
     };
 
@@ -93,7 +95,7 @@ const Login = () => {
                         </Button>
                     </form>
                     <div className="mt-6 text-center flex justify-center items-center space-x-2">
-                        <p className="text-sm text-white/70">Don't have an account? </p>
+                        <p className="text-sm text-white/70">Don&apos;t have an account? </p>
                         <Link href="/register" className="text-sm hover:underline hover:cursor-pointer">
                             Signup
                         </Link>
@@ -108,5 +110,10 @@ const Login = () => {
     );
 }
 
-export default Login
+export default withAuth(Login, {
+  requireAuth: false,
+  showSidebar: false,
+  redirectIfAuthenticated: true, 
+  redirectIfAuthenticatedTo: "/" 
+});
 

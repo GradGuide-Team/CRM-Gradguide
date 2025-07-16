@@ -1,6 +1,6 @@
 //client\src\app\(auth)\Register\page.tsx
 "use client"
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { GraduationCap } from 'lucide-react';
 
 import React from 'react'
 import Link from 'next/link';
+import { withAuth } from '@/wrapper/authWrapper';
 
 const Register = () => {
     const [email, setEmail] = useState('');
@@ -22,6 +23,7 @@ const Register = () => {
         try {
             await signup(name, email, password);
         } catch (error) {
+            console.error(error)
         }
     };
 
@@ -123,5 +125,9 @@ const Register = () => {
     );
 }
 
-export default Register
-
+export default withAuth(Register, {
+  requireAuth: false,           
+  showSidebar: false,          
+  redirectIfAuthenticated: true,
+  redirectIfAuthenticatedTo: "/"
+});

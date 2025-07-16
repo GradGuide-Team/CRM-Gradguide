@@ -59,8 +59,8 @@ class Documents(BaseModel):
     marksheets: bool = False
     english_exam: bool = False
     sop: bool = False
-    lo: bool = False
-    resumet: bool = False
+    lor: bool = False
+    resume: bool = False
 
 class StudentCreate(BaseModel):
     full_name: str = Field(..., min_length=3, max_length=100)

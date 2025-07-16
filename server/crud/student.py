@@ -161,14 +161,13 @@ async def update_student(
     if "documents" in update_data and update_data["documents"] is not None:
         documents_data = update_data["documents"]
         
-        
         documents_doc = DocumentsRequired(
             passport=documents_data.get('passport', False),
-            marksheetst=documents_data.get('marksheets', False),
-            english_examt=documents_data.get('english_exam', False),
-            sopt=documents_data.get('sop', False),
-            lort=documents_data.get('lor', False),
-            resumet=documents_data.get('resume', False)
+            marksheets=documents_data.get('marksheets', False),  # Fixed: was 'marksheetst'
+            english_exam=documents_data.get('english_exam', False),  # Fixed: was 'english_examt'
+            sop=documents_data.get('sop', False),  # Fixed: was 'sopt'
+            lor=documents_data.get('lor', False),  # Fixed: was 'lort'
+            resume=documents_data.get('resume', False)  # Fixed: was 'resumet'
         )
         
         student.documents = documents_doc
@@ -180,7 +179,7 @@ async def update_student(
         visa_docs_doc = VisaDocuments(
             decision=visa_docs_data.get('decision', 'Pending'),
             counselling_started=visa_docs_data.get('counselling_started', False),
-            documents_recieved=visa_docs_data.get('documents_recieved', False),
+            documents_received=visa_docs_data.get('documents_received', False),
             application_filled=visa_docs_data.get('application_filled', False),
             interview_scheduled=visa_docs_data.get('interview_scheduled', False)
         )
