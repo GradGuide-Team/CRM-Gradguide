@@ -3,10 +3,10 @@ const endpoints = {
     signup: "/auth/signup",
 
     // Students
-    addStudent: "/v1/students",
-    getAllStudents: "/v1/students",
-    getStudentById: (id: string) => `/v1/students/${id}`,
-    updateStudent: (id: string) => `/v1/students/${id}`,
+    addStudent: "/students",
+    getAllStudents: "/students",
+    getStudentById:  `/students`,
+    updateStudent:  `/students`,
 };
 
 export default endpoints;
