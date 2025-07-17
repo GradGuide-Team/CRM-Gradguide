@@ -35,8 +35,14 @@ const student = () => {
         setError(null);
         const response = await axiosInstance.get(`${endpoints.getStudentById}/${studentId}`)
         if (response.status === 200) {
-          setStudent(response.data);
-          setEditedStudent(response.data); // Initialize edited student
+          const rawData = response.data;
+
+          const processedStudent: StudentDetail = {
+            ...rawData,
+            dob: rawData.dob ? new Date(rawData.dob) : null,
+          };
+          setStudent(processedStudent);
+          setEditedStudent(processedStudent);
         } else {
           throw new Error(`Failed to fetch student: Status ${response.status}`);
         }
@@ -62,7 +68,7 @@ const student = () => {
 
   const handleSave = async () => {
     if (!editedStudent || !studentId) return;
-    
+
     setIsSaving(true);
     try {
       const updateData = {
@@ -70,6 +76,8 @@ const student = () => {
         email_address: editedStudent.email_address,
         phone_number: editedStudent.phone_number,
         target_country: editedStudent.target_country,
+        degree_type: editedStudent.degree_type,
+        dob: editedStudent.dob ? editedStudent.dob.toISOString() : null,
         // assigned_counselor_id: editedStudent.assigned_counselor_id,
         application_path: editedStudent.application_path,
         visa_documents: editedStudent.visa_documents,
@@ -78,9 +86,14 @@ const student = () => {
       };
 
       const response = await axiosInstance.patch(`${endpoints.updateStudent}/${studentId}`, updateData);
-      
+
       if (response.status === 200) {
-        setStudent(editedStudent);
+        const updatedRawData = response.data;
+        const updatedProcessedStudent: StudentDetail = {
+          ...updatedRawData,
+          dob: updatedRawData.dob ? new Date(updatedRawData.dob) : null,
+        };
+        setStudent(updatedProcessedStudent);
         setIsEditing(false);
         console.log('Student updated successfully');
       } else {
@@ -95,9 +108,9 @@ const student = () => {
     }
   };
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: keyof StudentDetail, value: any) => {
     if (!editedStudent) return;
-    
+
     setEditedStudent(prev => ({
       ...prev!,
       [field]: value
@@ -106,7 +119,7 @@ const student = () => {
 
   const handleDocumentChange = (docType: string, value: boolean) => {
     if (!editedStudent) return;
-    
+
     setEditedStudent(prev => ({
       ...prev!,
       documents: {
@@ -118,7 +131,7 @@ const student = () => {
 
   const handleVisaDocumentChange = (field: string, value: any) => {
     if (!editedStudent) return;
-    
+
     setEditedStudent(prev => ({
       ...prev!,
       visa_documents: {
@@ -130,13 +143,13 @@ const student = () => {
 
   const handleUniversityChoiceChange = (index: number, field: string, value: any) => {
     if (!editedStudent) return;
-    
+
     const updatedChoices = [...editedStudent.university_choices];
     updatedChoices[index] = {
       ...updatedChoices[index],
       [field]: value
     };
-    
+
     setEditedStudent(prev => ({
       ...prev!,
       university_choices: updatedChoices
@@ -220,12 +233,26 @@ const student = () => {
               <Globe className="mr-2 h-4 w-4 text-gray-500" />
               <span className="text-gray-600">Target Country:</span>
               {isEditing ? (
-                <input
-                  type="text"
+                // <input
+                //   type="text"
+                //   value={editedStudent?.target_country || ''}
+                //   onChange={(e) => handleInputChange('target_country', e.target.value)}
+                //   className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                // />
+                <select
+                  id="target_country"
                   value={editedStudent?.target_country || ''}
                   onChange={(e) => handleInputChange('target_country', e.target.value)}
-                  className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
-                />
+                  className={`w-full px-3 py-2 border rounded-md transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white`}
+
+                >
+                  <option value="Australia">Australia</option>
+                  <option value="Canada">Canada</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="United States">United States</option>
+                  <option value="Germany">Germany</option>
+                  <option value="Ireland">Ireland</option>
+                </select>
               ) : (
                 <span className="ml-2 text-gray-900">{currentStudent.target_country}</span>
               )}
@@ -243,14 +270,51 @@ const student = () => {
                   <option value="Eduwise">Eduwise</option>
                 </select>
               ) : (
-                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                  currentStudent.application_path === "Direct" 
-                    ? "bg-blue-100 text-blue-800"
-                    : currentStudent.application_path === "SI"
+                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${currentStudent.application_path === "Direct"
+                  ? "bg-blue-100 text-blue-800"
+                  : currentStudent.application_path === "SI"
                     ? "bg-green-100 text-green-800"
                     : "bg-purple-100 text-purple-800"
-                }`}>
+                  }`}>
                   {currentStudent.application_path}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center">
+              <span className="text-gray-600">Date Of Birth:</span>
+              {isEditing ? (
+                <input
+                  type="date" // This is the calendar input
+                  value={editedStudent?.dob ? editedStudent.dob.toISOString().split('T')[0] : ''}
+                  onChange={(e) => {
+                    const dateString = e.target.value;
+                    handleInputChange('dob', dateString ? new Date(dateString) : null);
+                  }}
+                  className="ml-2 px-2 py-1 border rounded text-gray-900"
+                />
+              ) : (
+                <span className="ml-2 px-2 py-1 rounded-full text-xs font-medium">
+                  {currentStudent.dob ? currentStudent.dob.toLocaleDateString() : 'N/A'} {/* Format Date for display or show N/A */}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center">
+              <span className="text-gray-600">Degree Type</span>
+              {isEditing ? (
+                <select
+                  value={editedStudent?.degree_type || 'Undergraduation'}
+                  onChange={(e) => handleInputChange('degree_type', e.target.value)}
+                  className="ml-2 px-2 py-1 border rounded text-gray-900"
+                >
+                  <option value="Undergraduation">Undergraduation</option>
+                  <option value="Masters">Masters</option>
+                  <option value="PHD">PHD</option>
+                </select>
+              ) : (
+                <span className="ml-2 px-2 py-1 rounded-full text-sm font-normal ">
+                  {currentStudent.degree_type || 'N/A'}
                 </span>
               )}
             </div>
@@ -262,7 +326,7 @@ const student = () => {
           <div className="space-y-3">
             <div>
               <span className="text-gray-600">Name:</span>
-              <span className="ml-2 text-gray-900">{currentStudent.assigned_counselor?.name||""}</span>
+              <span className="ml-2 text-gray-900">{currentStudent.assigned_counselor?.name || ""}</span>
             </div>
             <div>
               <span className="text-gray-600">Email:</span>
@@ -326,15 +390,14 @@ const student = () => {
                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
                       Priority {index + 1}
                     </span>
-                    <span className={`px-2 py-1 rounded text-sm font-medium ${
-                      choice.application_status === "Accepted"
-                        ? "bg-green-100 text-green-800"
-                        : choice.application_status === "Pending"
+                    <span className={`px-2 py-1 rounded text-sm font-medium ${choice.application_status === "Accepted"
+                      ? "bg-green-100 text-green-800"
+                      : choice.application_status === "Pending"
                         ? "bg-yellow-100 text-yellow-800"
                         : choice.application_status === "Rejected"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}>
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}>
                       {choice.application_status}
                     </span>
                   </div>
@@ -404,7 +467,7 @@ const student = () => {
                 <div className="text-right">
                   <p className="text-sm text-gray-600 mb-1">Application Progress</p>
                   <div className="w-24 bg-gray-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${progressPercentage}%` }}
                     ></div>
@@ -460,14 +523,12 @@ const student = () => {
                       <BookOpen className="mr-2 h-4 w-4 text-gray-500" />
                       <span className="text-sm">Application submitted</span>
                     </div>
-                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${
-                      choice.application_submitted ? 'bg-blue-500' : 'bg-gray-300'
-                    } ${isEditing ? 'cursor-pointer' : ''}`}
-                    onClick={() => isEditing && handleUniversityChoiceChange(index, 'application_submitted', !choice.application_submitted)}
+                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${choice.application_submitted ? 'bg-blue-500' : 'bg-gray-300'
+                      } ${isEditing ? 'cursor-pointer' : ''}`}
+                      onClick={() => isEditing && handleUniversityChoiceChange(index, 'application_submitted', !choice.application_submitted)}
                     >
-                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                        choice.application_submitted ? 'translate-x-6' : 'translate-x-0'
-                      }`}></div>
+                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${choice.application_submitted ? 'translate-x-6' : 'translate-x-0'
+                        }`}></div>
                     </div>
                   </div>
 
@@ -476,14 +537,12 @@ const student = () => {
                       <FileText className="mr-2 h-4 w-4 text-gray-500" />
                       <span className="text-sm">Loan process started</span>
                     </div>
-                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${
-                      choice.loan_process_started ? 'bg-blue-500' : 'bg-gray-300'
-                    } ${isEditing ? 'cursor-pointer' : ''}`}
-                    onClick={() => isEditing && handleUniversityChoiceChange(index, 'loan_process_started', !choice.loan_process_started)}
+                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${choice.loan_process_started ? 'bg-blue-500' : 'bg-gray-300'
+                      } ${isEditing ? 'cursor-pointer' : ''}`}
+                      onClick={() => isEditing && handleUniversityChoiceChange(index, 'loan_process_started', !choice.loan_process_started)}
                     >
-                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                        choice.loan_process_started ? 'translate-x-6' : 'translate-x-0'
-                      }`}></div>
+                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${choice.loan_process_started ? 'translate-x-6' : 'translate-x-0'
+                        }`}></div>
                     </div>
                   </div>
 
@@ -492,14 +551,12 @@ const student = () => {
                       <FileText className="mr-2 h-4 w-4 text-gray-500" />
                       <span className="text-sm">Additional documents requested</span>
                     </div>
-                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${
-                      choice.additional_docs_requested ? 'bg-blue-500' : 'bg-gray-300'
-                    } ${isEditing ? 'cursor-pointer' : ''}`}
-                    onClick={() => isEditing && handleUniversityChoiceChange(index, 'additional_docs_requested', !choice.additional_docs_requested)}
+                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${choice.additional_docs_requested ? 'bg-blue-500' : 'bg-gray-300'
+                      } ${isEditing ? 'cursor-pointer' : ''}`}
+                      onClick={() => isEditing && handleUniversityChoiceChange(index, 'additional_docs_requested', !choice.additional_docs_requested)}
                     >
-                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                        choice.additional_docs_requested ? 'translate-x-6' : 'translate-x-0'
-                      }`}></div>
+                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${choice.additional_docs_requested ? 'translate-x-6' : 'translate-x-0'
+                        }`}></div>
                     </div>
                   </div>
 
@@ -508,14 +565,12 @@ const student = () => {
                       <CreditCard className="mr-2 h-4 w-4 text-gray-500" />
                       <span className="text-sm">Fee payment completed</span>
                     </div>
-                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${
-                      choice.fee_payment_completed ? 'bg-blue-500' : 'bg-gray-300'
-                    } ${isEditing ? 'cursor-pointer' : ''}`}
-                    onClick={() => isEditing && handleUniversityChoiceChange(index, 'fee_payment_completed', !choice.fee_payment_completed)}
+                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${choice.fee_payment_completed ? 'bg-blue-500' : 'bg-gray-300'
+                      } ${isEditing ? 'cursor-pointer' : ''}`}
+                      onClick={() => isEditing && handleUniversityChoiceChange(index, 'fee_payment_completed', !choice.fee_payment_completed)}
                     >
-                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                        choice.fee_payment_completed ? 'translate-x-6' : 'translate-x-0'
-                      }`}></div>
+                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${choice.fee_payment_completed ? 'translate-x-6' : 'translate-x-0'
+                        }`}></div>
                     </div>
                   </div>
                 </div>
@@ -542,14 +597,12 @@ const student = () => {
                 <FileText className="mr-2 h-4 w-4 text-gray-500" />
                 <span className="text-sm capitalize">{key.replace('_', ' ')}</span>
               </div>
-              <div className={`w-12 h-6 rounded-full p-1 transition-colors ${
-                value ? 'bg-blue-500' : 'bg-gray-300'
-              } ${isEditing ? 'cursor-pointer' : ''}`}
-              onClick={() => isEditing && handleDocumentChange(key, !value)}
+              <div className={`w-12 h-6 rounded-full p-1 transition-colors ${value ? 'bg-blue-500' : 'bg-gray-300'
+                } ${isEditing ? 'cursor-pointer' : ''}`}
+                onClick={() => isEditing && handleDocumentChange(key, !value)}
               >
-                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                  value ? 'translate-x-6' : 'translate-x-0'
-                }`}></div>
+                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-0'
+                  }`}></div>
               </div>
             </div>
           ))}
@@ -592,14 +645,12 @@ const student = () => {
               <FileText className="mr-2 h-4 w-4 text-gray-500" />
               <span className="text-sm">Counselling started</span>
             </div>
-            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${
-              currentStudent.visa_documents.counselling_started ? 'bg-blue-500' : 'bg-gray-300'
-            } ${isEditing ? 'cursor-pointer' : ''}`}
-            onClick={() => isEditing && handleVisaDocumentChange('counselling_started', !currentStudent.visa_documents.counselling_started)}
+            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${currentStudent.visa_documents.counselling_started ? 'bg-blue-500' : 'bg-gray-300'
+              } ${isEditing ? 'cursor-pointer' : ''}`}
+              onClick={() => isEditing && handleVisaDocumentChange('counselling_started', !currentStudent.visa_documents.counselling_started)}
             >
-              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                currentStudent.visa_documents.counselling_started ? 'translate-x-6' : 'translate-x-0'
-              }`}></div>
+              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${currentStudent.visa_documents.counselling_started ? 'translate-x-6' : 'translate-x-0'
+                }`}></div>
             </div>
           </div>
 
@@ -608,14 +659,12 @@ const student = () => {
               <FileText className="mr-2 h-4 w-4 text-gray-500" />
               <span className="text-sm">Documents received</span>
             </div>
-            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${
-              currentStudent.visa_documents.documents_received ? 'bg-blue-500' : 'bg-gray-300'
-            } ${isEditing ? 'cursor-pointer' : ''}`}
-            onClick={() => isEditing && handleVisaDocumentChange('documents_received', !currentStudent.visa_documents.documents_received)}
+            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${currentStudent.visa_documents.documents_received ? 'bg-blue-500' : 'bg-gray-300'
+              } ${isEditing ? 'cursor-pointer' : ''}`}
+              onClick={() => isEditing && handleVisaDocumentChange('documents_received', !currentStudent.visa_documents.documents_received)}
             >
-              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                currentStudent.visa_documents.documents_received ? 'translate-x-6' : 'translate-x-0'
-              }`}></div>
+              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${currentStudent.visa_documents.documents_received ? 'translate-x-6' : 'translate-x-0'
+                }`}></div>
             </div>
           </div>
 
@@ -624,14 +673,12 @@ const student = () => {
               <FileText className="mr-2 h-4 w-4 text-gray-500" />
               <span className="text-sm">Application filled</span>
             </div>
-            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${
-              currentStudent.visa_documents.application_filled ? 'bg-blue-500' : 'bg-gray-300'
-            } ${isEditing ? 'cursor-pointer' : ''}`}
-            onClick={() => isEditing && handleVisaDocumentChange('application_filled', !currentStudent.visa_documents.application_filled)}
+            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${currentStudent.visa_documents.application_filled ? 'bg-blue-500' : 'bg-gray-300'
+              } ${isEditing ? 'cursor-pointer' : ''}`}
+              onClick={() => isEditing && handleVisaDocumentChange('application_filled', !currentStudent.visa_documents.application_filled)}
             >
-              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                currentStudent.visa_documents.application_filled ? 'translate-x-6' : 'translate-x-0'
-              }`}></div>
+              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${currentStudent.visa_documents.application_filled ? 'translate-x-6' : 'translate-x-0'
+                }`}></div>
             </div>
           </div>
 
@@ -640,14 +687,12 @@ const student = () => {
               <Calendar className="mr-2 h-4 w-4 text-gray-500" />
               <span className="text-sm">Interview scheduled</span>
             </div>
-            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${
-              currentStudent.visa_documents.interview_scheduled ? 'bg-blue-500' : 'bg-gray-300'
-            } ${isEditing ? 'cursor-pointer' : ''}`}
-            onClick={() => isEditing && handleVisaDocumentChange('interview_scheduled', !currentStudent.visa_documents.interview_scheduled)}
+            <div className={`w-12 h-6 rounded-full p-1 transition-colors ${currentStudent.visa_documents.interview_scheduled ? 'bg-blue-500' : 'bg-gray-300'
+              } ${isEditing ? 'cursor-pointer' : ''}`}
+              onClick={() => isEditing && handleVisaDocumentChange('interview_scheduled', !currentStudent.visa_documents.interview_scheduled)}
             >
-              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                currentStudent.visa_documents.interview_scheduled ? 'translate-x-6' : 'translate-x-0'
-              }`}></div>
+              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${currentStudent.visa_documents.interview_scheduled ? 'translate-x-6' : 'translate-x-0'
+                }`}></div>
             </div>
           </div>
         </div>
@@ -740,11 +785,10 @@ const student = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
+                  ? 'border-blue-500 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 {tab.label}
               </button>
