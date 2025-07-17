@@ -42,6 +42,8 @@ async def create_student(student_data: StudentCreate, creator_user: User):
         phone_number=student_data.phone_number,
         target_country=student_data.target_country,
         assigned_counselor=assigned_counselor_obj,
+        degree_type= student_data.degree_type,
+        dob= student_data.dob,
         created_by=creator_user, 
         application_path=student_data.application_path,
         university_choices=university_choices_docs,
@@ -163,11 +165,11 @@ async def update_student(
         
         documents_doc = DocumentsRequired(
             passport=documents_data.get('passport', False),
-            marksheets=documents_data.get('marksheets', False),  # Fixed: was 'marksheetst'
-            english_exam=documents_data.get('english_exam', False),  # Fixed: was 'english_examt'
-            sop=documents_data.get('sop', False),  # Fixed: was 'sopt'
-            lor=documents_data.get('lor', False),  # Fixed: was 'lort'
-            resume=documents_data.get('resume', False)  # Fixed: was 'resumet'
+            marksheets=documents_data.get('marksheets', False),  
+            english_exam=documents_data.get('english_exam', False),  
+            sop=documents_data.get('sop', False),  
+            lor=documents_data.get('lor', False), 
+            resume=documents_data.get('resume', False)  
         )
         
         student.documents = documents_doc

@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { StudentsTable } from '@/components/StudentsTable';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Move QueryClient outside the component
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -24,7 +23,6 @@ const Dashboard = () => {
   const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   const handleStudentAdded = () => {
-    // Trigger table refetch
     setRefetchTrigger(prev => prev + 1);
     
     toast({

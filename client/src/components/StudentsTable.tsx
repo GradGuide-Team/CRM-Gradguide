@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import * as React from "react"
@@ -13,7 +14,17 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table"
-import {  ChevronDown, MoreHorizontal, Loader2 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { ChevronDown, MoreHorizontal, Loader2, Delete, LucideDelete, Trash } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -60,7 +71,7 @@ const fetchStudents = async (skip: number, limit: number): Promise<Student[]> =>
     // Debug: Log the token before making the request
     const token = localStorage.getItem('access_token');
     console.log('Token being used:', token ? `${token.substring(0, 20)}...` : 'No token found');
-    
+
     const response = await axiosInstance.get(
       `${endpoints.getAllStudents}?skip=${skip}&limit=${limit}&populate_counselor=true&populate_creator=false`
     )
@@ -72,147 +83,7 @@ const fetchStudents = async (skip: number, limit: number): Promise<Student[]> =>
   }
 }
 
-export const columns: ColumnDef<Student>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "full_name",
-    header: ({  }) => {
-      return (
-        <Button
-          variant="ghost"
-        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-transparent px-0"
-        >
-          Name
-          {/* <ArrowUpDown className="ml-2 h-4 w-4" /> */}
-        </Button>
-      )
-    },
-    cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("full_name")}</div>
-    ),
-  },
-  {
-    accessorKey: "email_address",
-    header: ({  }) => {
-      return (
-        <Button
-          variant="ghost"
-        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-transparent px-0"
-        >
-          Email
-          {/* <ArrowUpDown className="ml-2 h-4 w-4" /> */}
-        </Button>
-      )
-    },
-    cell: ({ row }) => (
-      <div className="lowercase text-muted-foreground">{row.getValue("email_address")}</div>
-    ),
-  },
-  {
-    accessorKey: "target_country",
-    header: ({  }) => {
-      return (
-        <Button
-          variant="ghost"
-        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-transparent px-0 "
-        >
-          Target Country
-          {/* <ArrowUpDown className="ml-2 h-4 w-4" /> */}
-        </Button>
-      )
-    },
-    cell: ({ row }) => (
-      <div className="capitalize text-start ml-5">{row.getValue("target_country")}</div>
-    ),
-  },
-  {
-    accessorKey: "assigned_counselor",
-    header: "Assigned Counselor",
-    cell: ({ row }) => {
-      const counselor = row.getValue("assigned_counselor") as Student['assigned_counselor']
-      return (
-        <div className="flex flex-col">
-          <span className="font-medium ">{counselor?.name || "N/A"}</span>
-          <span className="text-sm text-muted-foreground">{counselor?.email || ""}</span>
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: "application_path",
-    header: "Application Path",
-    cell: ({ row }) => {
-      const path = row.getValue("application_path") as string
-      return (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          path === "Direct" 
-            ? "bg-blue-100 text-blue-800 ml-5 dark:bg-blue-900/20 dark:text-blue-400"
-            : path === "Agent"
-            ? "bg-green-100 text-green-800 ml-5 dark:bg-green-900/20 dark:text-green-400"
-            : "bg-purple-100 text-purple-800 ml-5 dark:bg-purple-900/20 dark:text-purple-400"
-        }`}>
-          {path}
-        </span>
-      )
-    },
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const student = row.original
 
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(student._id)}
-            >
-              Copy student ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View details</DropdownMenuItem>
-            <DropdownMenuItem>Edit student</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
-              Delete student
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-]
 
 interface StudentsTableProps {
   refetchTrigger?: number
@@ -223,13 +94,32 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
+  const [studentToDelete, setStudentToDelete] = React.useState<Student | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   })
 
   const skip = pagination.pageIndex * pagination.pageSize
+  const handleDeleteStudent = async () => {
+    if (!studentToDelete) return
 
+    setIsDeleting(true)
+    try {
+      await axiosInstance.delete(`${endpoints.student}/${studentToDelete._id}`)
+
+      refetch() // Refetch the table data
+      setIsDeleteDialogOpen(false)
+      setStudentToDelete(null)
+    } catch (error) {
+      console.error('Error deleting student:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
   const {
     data: students,
     isLoading,
@@ -246,7 +136,159 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
       refetch()
     }
   }, [refetchTrigger, refetch])
+  const columns: ColumnDef<Student>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "full_name",
+      header: ({ }) => {
+        return (
+          <Button
+            variant="ghost"
+            //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="hover:bg-transparent px-0"
+          >
+            Name
+            {/* <ArrowUpDown className="ml-2 h-4 w-4" /> */}
+          </Button>
+        )
+      },
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("full_name")}</div>
+      ),
+    },
+    {
+      accessorKey: "email_address",
+      header: ({ }) => {
+        return (
+          <Button
+            variant="ghost"
+            //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="hover:bg-transparent px-0"
+          >
+            Email
+            {/* <ArrowUpDown className="ml-2 h-4 w-4" /> */}
+          </Button>
+        )
+      },
+      cell: ({ row }) => (
+        <div className="lowercase text-muted-foreground">{row.getValue("email_address")}</div>
+      ),
+    },
+    {
+      accessorKey: "target_country",
+      header: ({ }) => {
+        return (
+          <Button
+            variant="ghost"
+            //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="hover:bg-transparent px-0 "
+          >
+            Target Country
+            {/* <ArrowUpDown className="ml-2 h-4 w-4" /> */}
+          </Button>
+        )
+      },
+      cell: ({ row }) => (
+        <div className="capitalize text-start ml-5">{row.getValue("target_country")}</div>
+      ),
+    },
+    {
+      accessorKey: "assigned_counselor",
+      header: "Assigned Counselor",
+      cell: ({ row }) => {
+        const counselor = row.getValue("assigned_counselor") as Student['assigned_counselor']
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium ">{counselor?.name || "N/A"}</span>
+            <span className="text-sm text-muted-foreground">{counselor?.email || ""}</span>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "application_path",
+      header: "Application Path",
+      cell: ({ row }) => {
+        const path = row.getValue("application_path") as string
+        return (
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${path === "Direct"
+            ? "bg-blue-100 text-blue-800 ml-5 dark:bg-blue-900/20 dark:text-blue-400"
+            : path === "Agent"
+              ? "bg-green-100 text-green-800 ml-5 dark:bg-green-900/20 dark:text-green-400"
+              : "bg-purple-100 text-purple-800 ml-5 dark:bg-purple-900/20 dark:text-purple-400"
+            }`}>
+            {path}
+          </span>
+        )
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const student = row.original
 
+        return (
+          <Trash size={15} className="text-red-500 hover:text-red-900 hover:bg-red-100 rounded-sm" onClick={(e) => {
+            e.stopPropagation()
+            setStudentToDelete(student)
+            setIsDeleteDialogOpen(true)
+          }} />
+          // <DropdownMenu>
+          //   <DropdownMenuTrigger asChild>
+          //     <Button variant="ghost" className="h-8 w-8 p-0">
+          //       <span className="sr-only">Open menu</span>
+          //       <MoreHorizontal className="h-4 w-4" />
+          //     </Button>
+          //   </DropdownMenuTrigger>
+          //   <DropdownMenuContent align="end">
+          //     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          //     <DropdownMenuItem
+          //       onClick={() => navigator.clipboard.writeText(student._id)}
+          //     >
+          //       Copy student ID
+          //     </DropdownMenuItem>
+          //     <DropdownMenuSeparator />
+          //     {/* <DropdownMenuItem>View details</DropdownMenuItem> */}
+          //     {/* <DropdownMenuItem>Edit student</DropdownMenuItem> */}
+          //     <DropdownMenuItem
+          // onClick={(e) => {
+          //   e.stopPropagation()
+          //   setStudentToDelete(student)
+          //   setIsDeleteDialogOpen(true)
+          // }}
+          //       className="text-red-600">
+          //       Delete student
+          //     </DropdownMenuItem>
+          //   </DropdownMenuContent>
+          // </DropdownMenu>
+        )
+      },
+    },
+  ]
   const table = useReactTable({
     data: students || [],
     columns,
@@ -268,7 +310,7 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
     },
     manualPagination: true,
   })
- const handleRowClick = (studentId: string) => {
+  const handleRowClick = (studentId: string) => {
     // Open in a new tab
     window.open(`/student?id=${studentId}`, '_blank');
   };
@@ -306,7 +348,7 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
             </div>
           )}
         </div>
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
@@ -345,9 +387,9 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -369,7 +411,7 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
                   className="hover:bg-muted/50 cursor-pointer "
-                  onClick={() => handleRowClick(row.original._id)} 
+                  onClick={() => handleRowClick(row.original._id)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -403,9 +445,9 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
             {table.getFilteredSelectedRowModel().rows.length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected.
           </p>
-          
+
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
@@ -425,6 +467,36 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
           </Button>
         </div>
       </div>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the student
+              &quot;{studentToDelete?.full_name}&quot; and remove their data from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setStudentToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteStudent}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

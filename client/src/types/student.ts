@@ -51,6 +51,8 @@ export interface StudentDetail {
   email_address: string;
   phone_number: string;
   target_country: string;
+  degree_type: string | null;
+  dob: Date | null;
   assigned_counselor: AssignedCounselor;
   assigned_counselor_id: string | null;
   created_by: CreatedBy;

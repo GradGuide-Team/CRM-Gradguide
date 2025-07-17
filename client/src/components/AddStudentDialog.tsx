@@ -35,7 +35,9 @@ interface NewStudentData {
     phone_number: string;
     target_country: string;
     assigned_counselor_id: string;
-    application_path: "Direct" | "Agent" | "Referral";
+    application_path: "Direct" | "Eduwise" | "SI";
+    degree_type: "Undergraduation" | "Masters" | "PHD";
+    dob: string;
     university_choices: UniversityChoicePayload[];
     documents?: {
         passport: boolean;
@@ -75,6 +77,8 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         target_country: '',
         assigned_counselor_id: user?._id || '',
         application_path: 'Direct',
+        degree_type: 'Undergraduation',
+        dob: '',
         university_choices: [{ ...DEFAULT_UNIVERSITY_CHOICE_STATE, priority: 'Priority 1 Choice' }],
     });
 
@@ -158,7 +162,8 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         if (!formData.email_address) currentFieldErrors.email_address = "Email Address is required.";
         if (!formData.phone_number) currentFieldErrors.phone_number = "Phone Number is required.";
         if (!formData.target_country) currentFieldErrors.target_country = "Target Country is required.";
-
+        if (!formData.degree_type) currentFieldErrors.degree_type = "Degree Type is required.";
+        if (!formData.dob) currentFieldErrors.dob = "Date of Birth is required.";
         formData.university_choices.forEach((uniChoice, index) => {
             if (!uniChoice.university_name) currentFieldErrors[`university_name-${index}`] = "University Name is required.";
             if (!uniChoice.course_name) currentFieldErrors[`course_name-${index}`] = "Course Name is required.";
@@ -192,7 +197,8 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         try {
             const payload: NewStudentData = {
                 ...formData,
-                assigned_counselor_id: user._id, // Use user._id directly instead of formData.assigned_counselor_id
+                assigned_counselor_id: user._id,
+                dob: formData.dob,
                 university_choices: formData.university_choices.map(choice => ({
                     university_name: choice.university_name,
                     course_name: choice.course_name,
@@ -203,7 +209,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
 
             console.log("Final payload:", payload); // Add this to debug
 
-            const response = await axiosInstance.post(endpoints.addStudent, payload);
+            const response = await axiosInstance.post(endpoints.student, payload);
 
             if (response.status === 201 || response.status === 200) {
                 toast({
@@ -217,8 +223,10 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                     email_address: '',
                     phone_number: '',
                     target_country: '',
-                    assigned_counselor_id: user._id, // Set it correctly here too
+                    assigned_counselor_id: user._id,
                     application_path: 'Direct',
+                    degree_type: 'Undergraduation',
+                    dob: '',
                     university_choices: [{ ...DEFAULT_UNIVERSITY_CHOICE_STATE, priority: 'Priority 1 Choice' }],
                 });
                 setFieldErrors({});
@@ -333,7 +341,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
 
                             <div className="space-y-2">
                                 <Label htmlFor="target_country" className="text-sm font-medium">Target Country *</Label>
-                                <Input
+                                {/* <Input
                                     id="target_country"
                                     value={formData.target_country}
                                     onChange={handleInputChange}
@@ -342,11 +350,93 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                         ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
                                         : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
                                         }`}
-                                />
+                                /> */}
+                                <select 
+                                    id="target_country"
+                                    value={formData.target_country}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-3 py-2 border rounded-md transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.target_country
+                                        ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                        }`}
+                                        
+                                >
+                                    <option value="Australia">Australia</option>
+                                    <option value="Canada">Canada</option>
+                                    <option value="United Kingdom">United Kingdom</option>
+                                    <option value="United States">United States</option>
+                                    <option value="Germany">Germany</option>
+                                    <option value="Ireland">Ireland</option>
+                                </select>
                                 {fieldErrors.target_country && (
                                     <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
                                         <AlertCircle className="h-3 w-3" />
                                         {fieldErrors.target_country}
+                                    </p>
+                                )}
+                            </div>
+                            <div className='space-y-2'>
+                                <Label htmlFor="application_path" className="text-sm font-medium">Application Path *</Label>
+                                <select
+                                    id="application_path"
+                                    value={formData.application_path}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-3 py-2 border rounded-md transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.application_path
+                                        ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                        }`}
+                                >
+                                    <option value="Direct">Direct</option>
+                                    <option value="Eduwise">Eduwise</option>
+                                    <option value="SI">SI</option>
+                                </select>
+                                {fieldErrors.application_path && (
+                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                        <AlertCircle className="h-3 w-3" />
+                                        {fieldErrors.application_path}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="degree_type" className="text-sm font-medium">Degree Type *</Label>
+                                <select
+                                    id="degree_type"
+                                    value={formData.degree_type}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-3 py-2 border rounded-md transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.degree_type
+                                        ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                        }`}
+                                >
+                                    <option value="Undergraduation">Undergraduation</option>
+                                    <option value="Masters">Masters</option>
+                                    <option value="PHD">PHD</option>
+                                </select>
+                                {fieldErrors.degree_type && (
+                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                        <AlertCircle className="h-3 w-3" />
+                                        {fieldErrors.degree_type}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="dob" className="text-sm font-medium">Date of Birth *</Label>
+                                <Input
+                                    id="dob"
+                                    type="date"
+                                    value={formData.dob}
+                                    onChange={handleInputChange}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.dob
+                                        ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                        }`}
+                                />
+                                {fieldErrors.dob && (
+                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                        <AlertCircle className="h-3 w-3" />
+                                        {fieldErrors.dob}
                                     </p>
                                 )}
                             </div>

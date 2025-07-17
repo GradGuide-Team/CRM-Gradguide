@@ -3,7 +3,7 @@ const endpoints = {
     signup: "/auth/signup",
 
     // Students
-    addStudent: "/students",
+    student: "/students",
     getAllStudents: "/students",
     getStudentById:  `/students`,
     updateStudent:  `/students`,

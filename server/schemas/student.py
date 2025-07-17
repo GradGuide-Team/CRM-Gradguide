@@ -3,6 +3,8 @@ from pydantic import BaseModel, EmailStr, HttpUrl, Field, ConfigDict
 from typing import List, Optional, Literal, Any
 from bson import ObjectId
 from pydantic_core import core_schema
+from datetime import date
+from pydantic import field_validator
 
 # Pydantic v2 compatible PyObjectId
 class PyObjectId(ObjectId):
@@ -67,11 +69,20 @@ class StudentCreate(BaseModel):
     email_address: EmailStr
     phone_number: str = Field(..., min_length=10, max_length=20)
     target_country: str = Field(..., min_length=2, max_length=50)
+    dob: date 
     assigned_counselor_id: Optional[PyObjectId] = None 
     application_path: Literal["Direct", "SI", "Eduwise"] = "Direct"
+    degree_type: Literal["Undergraduation","Masters","PHD"] = "Masters"
     university_choices: List[UniversityChoiceBase] = Field(..., min_length=1, max_length=5)
     documents: Optional[Documents] = None 
     visa_documents: Optional[VisaDocuments] = None
+
+    @field_validator('dob')
+    @classmethod
+    def dob_must_be_in_past(cls, v):
+        if v >= date.today():
+            raise ValueError('Date of birth must be in the past')
+        return v
 
 
 class StudentPublic(BaseModel):
@@ -86,7 +97,8 @@ class StudentPublic(BaseModel):
     email_address: EmailStr
     phone_number: str
     target_country: str
-    
+    degree_type: Optional[str] = None 
+    dob: Optional[date] = None
     assigned_counselor: Optional[dict] = None 
     assigned_counselor_id: Optional[PyObjectId] = None 
 
@@ -105,8 +117,17 @@ class StudentUpdate(BaseModel):
     email_address: Optional[EmailStr] = None
     phone_number: Optional[str] = Field(None, min_length=10, max_length=20)
     target_country: Optional[str] = Field(None, min_length=2, max_length=50)
+    dob: Optional[date] = None 
     assigned_counselor_id: Optional[PyObjectId] = None
     application_path: Optional[Literal["Direct", "SI", "Eduwise"]] = None
+    degree_type: Optional[Literal["Undergraduation","Masters","PHD"]] = None
     visa_documents: Optional[VisaDocuments] = None
     university_choices: Optional[List[UniversityChoiceBase]] = None 
     documents: Optional[Documents] = None
+
+    @field_validator('dob')
+    @classmethod
+    def dob_must_be_in_past(cls, v):
+        if v is not None and v >= date.today():
+            raise ValueError('Date of birth must be in the past')
+        return v

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // client/src/components/AuthSidebar.tsx
 "use client";
@@ -47,21 +48,21 @@ const SidebarContent = ({ user, pathname, router }: {
             href: "/",
             icon: <IconDashboard className="text-white h-5 w-5 shrink-0" />,
         },
-        {
-            label: "Students",
-            href: "/students",
-            icon: <IconBook2 className="text-white h-5 w-5 shrink-0" />,
-        },
-        {
-            label: "Jobs",
-            href: "/jobpost",
-            icon: <IconBriefcase className="text-white h-5 w-5 shrink-0" />,
-        },
-        {
-            label: "Profile",
-            href: "/profile",
-            icon: <IconUser className="text-white h-5 w-5 shrink-0" />,
-        },
+        // {
+        //     label: "Students",
+        //     href: "/students",
+        //     icon: <IconBook2 className="text-white h-5 w-5 shrink-0" />,
+        // },
+        // {
+        //     label: "Jobs",
+        //     href: "/jobpost",
+        //     icon: <IconBriefcase className="text-white h-5 w-5 shrink-0" />,
+        // },
+        // {
+        //     label: "Profile",
+        //     href: "/profile",
+        //     icon: <IconUser className="text-white h-5 w-5 shrink-0" />,
+        // },
     ];
 
     const filteredNavItems = navItems.filter(() => {
