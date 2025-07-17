@@ -1,5 +1,5 @@
 # server\db\models.py
-from mongoengine import Document, StringField, EmbeddedDocument, ListField, EmbeddedDocumentField, ReferenceField, BooleanField
+from mongoengine import Document, StringField, EmbeddedDocument, ListField, EmbeddedDocumentField, ReferenceField, BooleanField, DateTimeField
 from datetime import datetime, timezone 
 class User(Document):
     name = StringField(required=True)
@@ -51,10 +51,10 @@ class Student(Document):
     email_address = StringField(required = True)
     phone_number = StringField(required = True)
     target_country = StringField(required = True)
-
+    dob = DateTimeField(required=True)
     assigned_counselor = ReferenceField(User)
     created_by = ReferenceField(User, required = True)
-
+    degree_type = StringField(choices = ["Undergraduation","Masters","PHD"])
     application_path = StringField(required = True)
     university_choices = ListField(EmbeddedDocumentField(UniversityChoice))
     documents = EmbeddedDocumentField(DocumentsRequired, default=DocumentsRequired)
@@ -77,8 +77,10 @@ class Student(Document):
             "full_name": self.full_name,
             "email_address": self.email_address,  
             "phone_number": self.phone_number,
+            "dob":self.dob,
             "target_country": self.target_country,
             "application_path": self.application_path,
+            "degree_type":self.degree_type,
             "university_choices": [choice.to_mongo().to_dict() if hasattr(choice.to_mongo(), 'to_dict') else dict(choice.to_mongo()) for choice in self.university_choices],
             "created_at": self.created_at,
             "updated_at": self.updated_at
