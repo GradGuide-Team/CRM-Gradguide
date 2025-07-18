@@ -1,5 +1,5 @@
 # server\db\models.py
-from mongoengine import Document, StringField, EmbeddedDocument, ListField, EmbeddedDocumentField, ReferenceField, BooleanField, DateTimeField
+from mongoengine import Document, StringField, EmbeddedDocument, ListField, EmbeddedDocumentField, ReferenceField, BooleanField, DateTimeField, IntField
 from datetime import datetime, timezone 
 class User(Document):
     name = StringField(required=True)
@@ -17,18 +17,89 @@ class User(Document):
             "role": self.role
         }
     
+class ApplicationStatusLog(EmbeddedDocument):
+    """Logs for tracking application status changes"""
+    previous_status = StringField()
+    new_status = StringField(required=True)
+    timestamp = DateTimeField(default=datetime.now(timezone.utc))
+    changed_by = ReferenceField(User, required=True)
+    university_choice_index = IntField(required=True) 
+
+    def to_dict(self):
+        return {
+            "previous_status": self.previous_status,
+            "new_status": self.new_status,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "changed_by": self.changed_by.to_public_dict() if self.changed_by else None,
+            "university_choice_index": self.university_choice_index
+        }
+    
+class UniversityNote(EmbeddedDocument):
+    """Notes specific to each university choice"""
+    title = StringField() 
+    description = StringField() 
+    created_by = ReferenceField(User, required=True)
+    created_at = DateTimeField(default=datetime.now(timezone.utc))
+    updated_at = DateTimeField(default=datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            "title": self.title,
+            "description": self.description,
+            "created_by": self.created_by.to_public_dict() if self.created_by else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
 class UniversityChoice(EmbeddedDocument):
     university_name = StringField(required=True)
     course_name = StringField(required = True)
     course_link = StringField()
     intake_month = StringField(required = True)
-    application_status = StringField(default="Pending", choices = ["Pending", "Accepted", "Rejected", "Waitlisted"])
+    application_status = StringField(defalut = "documents pending", choices = [
+            "documents pending", 
+            "documents received", 
+            "application pending", 
+            "application filed", 
+            "conditional offer received", 
+            "unconditional offer received", 
+            "Uni finalized"
+        ])
     offer_type = StringField(default = "Conditional",choices=["Conditional", "Unconditional"])
     application_submitted = BooleanField(default=False)
     additional_docs_requested = BooleanField(default=False)
     loa_cas_received = BooleanField(default=False)
     loan_process_started = BooleanField(default=False)
     fee_payment_completed = BooleanField(default=False)
+    notes = ListField(EmbeddedDocumentField(UniversityNote))
+    
+    def to_dict(self):
+        data = self.to_mongo().to_dict() if hasattr(self.to_mongo(),'to_dict') else dict(self.to_mongo())
+        if self.notes:
+            data['notes'] = [note.to_dict() for note in self.notes]
+        else:
+            data['notes'] = []
+        return data
+
+class OverviewNote(EmbeddedDocument):
+    """Overview notes for the student - both manual and automatic"""
+    type = StringField(required=True, choices=["manual", "automatic"])
+    title = StringField()  
+    content = StringField()  
+    created_by = ReferenceField(User, required=True)
+    created_at = DateTimeField(default=datetime.now(timezone.utc))
+    related_university_index = IntField() 
+
+    def to_dict(self):
+        return {
+            "type": self.type,
+            "title": self.title,
+            "content": self.content,
+            "created_by": self.created_by.to_public_dict() if self.created_by else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "related_university_index": self.related_university_index
+        }
 
 class DocumentsRequired(EmbeddedDocument):
     passport = BooleanField(default=False)
@@ -59,6 +130,8 @@ class Student(Document):
     university_choices = ListField(EmbeddedDocumentField(UniversityChoice))
     documents = EmbeddedDocumentField(DocumentsRequired, default=DocumentsRequired)
     visa_documents = EmbeddedDocumentField(VisaDocuments, default = VisaDocuments)
+    status_logs = ListField(EmbeddedDocumentField(ApplicationStatusLog))
+    overview_notes = ListField(EmbeddedDocumentField(OverviewNote))
 
     created_at = StringField(default=lambda: datetime.now(timezone.utc).isoformat()) 
     updated_at = StringField(default=lambda: datetime.now(timezone.utc).isoformat()) 
@@ -81,11 +154,12 @@ class Student(Document):
             "target_country": self.target_country,
             "application_path": self.application_path,
             "degree_type":self.degree_type,
-            "university_choices": [choice.to_mongo().to_dict() if hasattr(choice.to_mongo(), 'to_dict') else dict(choice.to_mongo()) for choice in self.university_choices],
+            "university_choices": [choice.to_dict() for choice in self.university_choices],
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }
 
+        # Handle assigned counselor
         if self.assigned_counselor:
             if isinstance(self.assigned_counselor, User):
                 data["assigned_counselor"] = self.assigned_counselor.to_public_dict()
@@ -94,14 +168,15 @@ class Student(Document):
         else:
             data["assigned_counselor"] = None
 
+        # Handle created by
         if self.created_by:
             if isinstance(self.created_by, User):
                 data["created_by"] = self.created_by.to_public_dict()
             else:
                 data["created_by_id"] = str(self.created_by.id)
         else:
-            data["created_by"] = None # Should not happen if required=True
-        
+            data["created_by"] = None
+
         if self.documents:
             data["documents"] = self.documents.to_mongo().to_dict()
         else:
@@ -111,5 +186,15 @@ class Student(Document):
             data["visa_documents"] = self.visa_documents.to_mongo().to_dict()
         else:
             data["visa_documents"] = VisaDocuments().to_mongo().to_dict()
+
+        if self.status_logs:
+            data["status_logs"] = [log.to_dict() for log in self.status_logs]
+        else:
+            data["status_logs"] = []
+
+        if self.overview_notes:
+            data["overview_notes"] = [note.to_dict() for note in self.overview_notes]
+        else:
+            data["overview_notes"] = []
 
         return data
