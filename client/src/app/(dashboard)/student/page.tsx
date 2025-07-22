@@ -4,13 +4,22 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 // client\src\app\(dashboard)\student\page.tsx
 "use client";
+import { Button } from '@/components/ui/button';
 import axiosInstance from '@/services/axiosInstance';
 import endpoints from '@/services/endpoints';
 import { StudentDetail } from '@/types/student';
 import { withAuth } from '@/wrapper/authWrapper'
-import { BookOpen, Calendar, CreditCard, ExternalLink, FileText, Globe, Loader2, Mail, Phone, User } from 'lucide-react';
+import { BookOpen, Calendar, CreditCard, ExternalLink, FileText, Globe, Loader2, Mail, Phone, StickyNote, User, MessageSquare, ArrowDownCircle } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react'
+import { OverviewNotesDialog } from './components/OverviewNotesDialog';
+import { UniversityNotesDialog } from './components/UniversityNotesDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const student = () => {
   const searchParams = useSearchParams();
@@ -18,10 +27,14 @@ const student = () => {
   const [student, setStudent] = useState<StudentDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('courses');
   const [isEditing, setIsEditing] = useState(false);
   const [editedStudent, setEditedStudent] = useState<StudentDetail | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUniversityNotesOpen, setIsUniversityNotesOpen] = useState(false);
+  const [isOverviewNotesOpen, setIsOverviewNotesOpen] = useState(false);
+  const [selectedUniversityIndex, setSelectedUniversityIndex] = useState(0);
+
 
   useEffect(() => {
     const fetchStudent = async () => {
@@ -140,7 +153,28 @@ const student = () => {
       }
     }));
   };
+  const handleApplicationStatusUpdate = async (universityIndex: number, newStatus: string) => {
+    if (!studentId) return;
 
+    try {
+      await axiosInstance.put(`${endpoints.updateApplicationStatus}/${studentId}/application-status`, {
+        university_choice_index: universityIndex,
+        new_status: newStatus
+      });
+
+      // Refetch student data to get updated logs
+      const response = await axiosInstance.get(`${endpoints.getStudentById}/${studentId}`);
+      const rawData = response.data;
+      const processedStudent: StudentDetail = {
+        ...rawData,
+        dob: rawData.dob ? new Date(rawData.dob) : null,
+      };
+      setStudent(processedStudent);
+      setEditedStudent(processedStudent);
+    } catch (error) {
+      console.error('Error updating application status:', error);
+    }
+  };
   const handleUniversityChoiceChange = (index: number, field: string, value: any) => {
     if (!editedStudent) return;
 
@@ -189,8 +223,79 @@ const student = () => {
     { id: 'overview', label: 'Overview' },
     { id: 'courses', label: 'Courses & Applications' },
     { id: 'documents', label: 'Documents' },
-    { id: 'visa', label: 'Visa' }
+    { id: 'visa', label: 'Visa' },
+    { id: 'logs', label: 'Application Logs' },
+    { id: 'notes', label: 'Notes' }
   ];
+  const renderApplicationLogs = () => (
+    <div className="space-y-6">
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-2">Application Status Logs</h3>
+        <p className="text-gray-600">Track all application status changes</p>
+      </div>
+
+      <div className="space-y-4">
+        {currentStudent.status_logs?.map((log, index) => (
+          <div key={index} className="bg-gray-50 rounded-lg p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-medium">
+                  {log.previous_status ? `${log.previous_status} → ${log.new_status}` : `Initial status: ${log.new_status}`}
+                </p>
+                <p className="text-sm text-gray-600">
+                  University: {currentStudent.university_choices[log.university_choice_index]?.university_name}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Changed by: {log.changed_by?.name}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-500">
+                  {new Date(log.timestamp).toLocaleDateString()}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {new Date(log.timestamp).toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderNotes = () => (
+    <div className="space-y-6">
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-2">Overview Notes</h3>
+        <p className="text-gray-600">Manual and automatic notes</p>
+      </div>
+
+      <div className="space-y-4">
+        {currentStudent.overview_notes?.map((note, index) => (
+          <div key={index} className={`rounded-lg p-4 ${note.type === 'automatic' ? 'bg-blue-50' : 'bg-gray-50'}`}>
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`px-2 py-1 rounded text-xs ${note.type === 'automatic' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {note.type}
+                  </span>
+                </div>
+                <h4 className="font-medium">{note.title}</h4>
+                <p className="text-gray-600 mt-1">{note.content}</p>
+                <p className="text-sm text-gray-500 mt-2">By: {note.created_by?.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-500">
+                  {new Date(note.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -390,12 +495,25 @@ const student = () => {
                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
                       Priority {index + 1}
                     </span>
-                    <span className={`px-2 py-1 rounded text-sm font-medium ${choice.application_status === "Accepted"
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedUniversityIndex(index);
+                        setIsUniversityNotesOpen(true);
+                      }}
+                      className="ml-auto"
+                    >
+                      <StickyNote className="h-4 w-4 mr-1" />
+                      Notes ({choice.notes?.length || 0})
+                    </Button>
+                    <span className={`px-2 py-1 rounded text-sm font-medium ${choice.application_status === "unconditional offer received" || choice.application_status === "conditional offer received"
                       ? "bg-green-100 text-green-800"
-                      : choice.application_status === "Pending"
+                      : choice.application_status === "documents pending" || choice.application_status === "application pending"
                         ? "bg-yellow-100 text-yellow-800"
-                        : choice.application_status === "Rejected"
-                          ? "bg-red-100 text-red-800"
+                        : choice.application_status === "Uni finalized"
+                          ? "bg-blue-100 text-blue-800"
                           : "bg-gray-100 text-gray-800"
                       }`}>
                       {choice.application_status}
@@ -479,22 +597,28 @@ const student = () => {
               <div className="space-y-4">
                 <div>
                   <h5 className="font-medium mb-2">Application Status</h5>
-                  <div className="flex gap-4">
-                    {["Pending", "Accepted", "Rejected", "Waitlisted"].map((status) => (
-                      <label key={status} className="flex items-center">
-                        <input
-                          type="radio"
-                          name={`status-${index}`}
-                          value={status}
-                          checked={choice.application_status === status}
-                          onChange={() => isEditing && handleUniversityChoiceChange(index, 'application_status', status)}
-                          disabled={!isEditing}
-                          className="mr-2"
-                        />
-                        <span className="text-sm">{status}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" disabled={!isEditing}>
+                        {choice.application_status ? (
+                          <span className="capitalize flex  items-center justify-between cursor-pointer">{choice.application_status} <ArrowDownCircle className='ml-2'/> </span>
+                        ) : (
+                          "Select Status"
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {["documents pending", "documents received", "application pending", "application filed", "conditional offer received", "unconditional offer received", "Uni finalized"].map((status) => (
+                        <DropdownMenuItem
+                          key={status}
+                          onSelect={() => isEditing && handleApplicationStatusUpdate(index, status)}
+                          className="capitalize bg-white p-1 cursor-pointer hover:bg-slate-50 "
+                        >
+                          {status}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 <div>
@@ -622,7 +746,7 @@ const student = () => {
         <div className="mb-6">
           <h4 className="font-medium mb-2">Visa Decision</h4>
           <div className="flex gap-4">
-            {["Pending", "Approved", "Rejected"].map((status) => (
+            {["Pending", "Accepted", "Rejected"].map((status) => (
               <label key={status} className="flex items-center">
                 <input
                   type="radio"
@@ -710,6 +834,10 @@ const student = () => {
         return renderDocuments();
       case 'visa':
         return renderVisa();
+      case 'logs':
+        return renderApplicationLogs();
+      case 'notes':
+        return renderNotes();
       default:
         return renderOverview();
     }
@@ -745,12 +873,21 @@ const student = () => {
         {/* Edit/Save/Cancel Buttons */}
         <div className="flex gap-3 mb-6">
           {!isEditing ? (
-            <button
-              onClick={handleEdit}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Edit Student
-            </button>
+            <>
+              <button
+                onClick={handleEdit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Edit Student
+              </button>
+              <button
+                onClick={() => setIsOverviewNotesOpen(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Overview Notes ({currentStudent.overview_notes?.length || 0})
+              </button>
+            </>
           ) : (
             <>
               <button
@@ -800,7 +937,52 @@ const student = () => {
         <div className="min-h-96">
           {renderTabContent()}
         </div>
+        <UniversityNotesDialog
+          isOpen={isUniversityNotesOpen}
+          onOpenChange={setIsUniversityNotesOpen}
+          studentId={studentId!}
+          universityIndex={selectedUniversityIndex}
+          universityName={currentStudent.university_choices[selectedUniversityIndex]?.university_name || ''}
+          existingNotes={currentStudent.university_choices[selectedUniversityIndex]?.notes || []}
+          onNotesUpdated={() => {
+            // Refetch student data
+            const fetchStudent = async () => {
+              const response = await axiosInstance.get(`${endpoints.getStudentById}/${studentId}`);
+              const rawData = response.data;
+              const processedStudent: StudentDetail = {
+                ...rawData,
+                dob: rawData.dob ? new Date(rawData.dob) : null,
+              };
+              setStudent(processedStudent);
+              setEditedStudent(processedStudent);
+            };
+            fetchStudent();
+          }}
+        />
+
+        <OverviewNotesDialog
+          isOpen={isOverviewNotesOpen}
+          onOpenChange={setIsOverviewNotesOpen}
+          studentId={studentId!}
+          studentName={currentStudent.full_name}
+          existingNotes={currentStudent.overview_notes || []}
+          onNotesUpdated={() => {
+            // Refetch student data
+            const fetchStudent = async () => {
+              const response = await axiosInstance.get(`${endpoints.getStudentById}/${studentId}`);
+              const rawData = response.data;
+              const processedStudent: StudentDetail = {
+                ...rawData,
+                dob: rawData.dob ? new Date(rawData.dob) : null,
+              };
+              setStudent(processedStudent);
+              setEditedStudent(processedStudent);
+            };
+            fetchStudent();
+          }}
+        />
       </div>
+
     </div>
   );
 };
