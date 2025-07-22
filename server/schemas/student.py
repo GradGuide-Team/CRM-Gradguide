@@ -3,7 +3,7 @@ from pydantic import BaseModel, EmailStr, HttpUrl, Field, ConfigDict
 from typing import List, Optional, Literal, Any
 from bson import ObjectId
 from pydantic_core import core_schema
-from datetime import date
+from datetime import date, datetime
 from pydantic import field_validator
 
 # Pydantic v2 compatible PyObjectId
@@ -36,18 +36,84 @@ class PyObjectId(ObjectId):
         # Return a simple string schema for JSON
         return {"type": "string"}
 
+class ApplicationStatusLogSchema(BaseModel):
+    previous_status: Optional[str] = None
+    new_status: str
+    timestamp: datetime
+    changed_by: dict
+    university_choice_index: int
+
+class UniversityNoteSchema(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    created_by: dict
+    created_at: datetime
+    updated_at: datetime
+
+class UniversityNoteCreate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+class UniversityNoteUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+class OverviewNoteSchema(BaseModel):
+    type: Literal["manual", "automatic"]
+    title: Optional[str] = None
+    content: Optional[str] = None
+    created_by: dict
+    created_at: datetime
+    related_university_index: Optional[int] = None
+
+class OverviewNoteCreate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+
 class UniversityChoiceBase(BaseModel):
     university_name: str = Field(..., min_length=3, max_length=100)
     course_name: str = Field(..., min_length=3, max_length=100)
     course_link: Optional[HttpUrl] = None
     intake_month: str = Field(..., min_length=3, max_length=50)
-    application_status : Literal["Pending", "Accepted", "Rejected", "Waitlisted"] = "Pending"
-    offer_type:Literal ["Conditional","Unconditional"] = "Conditional"
-    application_submitted:bool = False
+    application_status: Literal[
+        "documents pending", 
+        "documents received", 
+        "application pending", 
+        "application filed", 
+        "conditional offer received", 
+        "unconditional offer received", 
+        "Uni finalized"
+    ] = "documents pending"
+    offer_type: Literal["Conditional", "Unconditional"] = "Conditional"
+    application_submitted: bool = False
     additional_docs_requested: bool = False
     loa_cas_received: bool = False
     loan_process_started: bool = False
     fee_payment_completed: bool = False
+    notes: List[UniversityNoteSchema] = []
+    
+    
+class UniversityChoiceUpdate(BaseModel):
+    university_name: Optional[str] = Field(None, min_length=3, max_length=100)
+    course_name: Optional[str] = Field(None, min_length=3, max_length=100)
+    course_link: Optional[HttpUrl] = None
+    intake_month: Optional[str] = Field(None, min_length=3, max_length=50)
+    application_status: Optional[Literal[
+        "documents pending", 
+        "documents received", 
+        "application pending", 
+        "application filed", 
+        "conditional offer received", 
+        "unconditional offer received", 
+        "Uni finalized"
+    ]] = None
+    offer_type: Optional[Literal["Conditional", "Unconditional"]] = None
+    application_submitted: Optional[bool] = None
+    additional_docs_requested: Optional[bool] = None
+    loa_cas_received: Optional[bool] = None
+    loan_process_started: Optional[bool] = None
+    fee_payment_completed: Optional[bool] = None
+
 
 class VisaDocuments(BaseModel):
     decision: Literal["Pending", "Accepted", "Rejected"] = "Pending"
@@ -72,7 +138,7 @@ class StudentCreate(BaseModel):
     dob: date 
     assigned_counselor_id: Optional[PyObjectId] = None 
     application_path: Literal["Direct", "SI", "Eduwise"] = "Direct"
-    degree_type: Literal["Undergraduation","Masters","PHD"] = "Masters"
+    degree_type: Literal["Undergraduation", "Masters", "PHD"] = "Masters"
     university_choices: List[UniversityChoiceBase] = Field(..., min_length=1, max_length=5)
     documents: Optional[Documents] = None 
     visa_documents: Optional[VisaDocuments] = None
@@ -109,6 +175,8 @@ class StudentPublic(BaseModel):
     documents: Documents
     university_choices: List[UniversityChoiceBase]
     visa_documents: VisaDocuments
+    status_logs: List[ApplicationStatusLogSchema] = []
+    overview_notes: List[OverviewNoteSchema] = []
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
@@ -120,9 +188,9 @@ class StudentUpdate(BaseModel):
     dob: Optional[date] = None 
     assigned_counselor_id: Optional[PyObjectId] = None
     application_path: Optional[Literal["Direct", "SI", "Eduwise"]] = None
-    degree_type: Optional[Literal["Undergraduation","Masters","PHD"]] = None
+    degree_type: Optional[Literal["Undergraduation", "Masters", "PHD"]] = None
     visa_documents: Optional[VisaDocuments] = None
-    university_choices: Optional[List[UniversityChoiceBase]] = None 
+    university_choices: Optional[List[UniversityChoiceUpdate]] = None 
     documents: Optional[Documents] = None
 
     @field_validator('dob')
@@ -131,3 +199,16 @@ class StudentUpdate(BaseModel):
         if v is not None and v >= date.today():
             raise ValueError('Date of birth must be in the past')
         return v
+
+# Additional schemas for specific operations
+class ApplicationStatusUpdateRequest(BaseModel):
+    university_choice_index: int = Field(..., ge=0, le=4)
+    new_status: Literal[
+        "documents pending", 
+        "documents received", 
+        "application pending", 
+        "application filed", 
+        "conditional offer received", 
+        "unconditional offer received", 
+        "Uni finalized"
+    ]

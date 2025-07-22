@@ -1,7 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from typing import List, Optional
 
-from server.schemas.student import StudentCreate, StudentPublic, StudentUpdate
+from server.schemas.student import (
+    StudentCreate, StudentPublic, StudentUpdate, 
+    ApplicationStatusUpdateRequest, UniversityNoteCreate, OverviewNoteCreate
+)
 from server.crud import student as crud_student
 from server.crud import user as crud_user
 from server.core.auth import get_current_user # This dependency provides the current logged-in user
@@ -76,6 +79,91 @@ async def read_student_by_id_endpoint(
     
     return student
 
+@router.put("/students/{student_id}/application-status", response_model=StudentPublic)
+async def update_student_application_status(
+    student_id: str,
+    status_update: ApplicationStatusUpdateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        creator_user_obj = await crud_user.get_user_by_id(current_user["id"])
+        if not creator_user_obj:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="User not found in DB.")
+
+        updated_student = await crud_student.update_application_status(
+            student_id=student_id,
+            status_update=status_update,
+            current_user_id=current_user["id"],
+            current_user_role=current_user["role"],
+            current_user=creator_user_obj
+        )
+        
+        if not updated_student:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+        
+        return updated_student
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to update status: {e}")
+
+@router.post("/students/{student_id}/university-notes/{university_index}", response_model=StudentPublic)
+async def add_university_note_endpoint(
+    student_id: str,
+    university_index: int,
+    note_data: UniversityNoteCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        creator_user_obj = await crud_user.get_user_by_id(current_user["id"])
+        if not creator_user_obj:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="User not found in DB.")
+
+        updated_student = await crud_student.add_university_note(
+            student_id=student_id,
+            university_index=university_index,
+            note_data=note_data,
+            current_user_id=current_user["id"],
+            current_user_role=current_user["role"],
+            current_user=creator_user_obj
+        )
+        
+        if not updated_student:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+        
+        return updated_student
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to add note: {e}")
+
+@router.post("/students/{student_id}/overview-notes", response_model=StudentPublic)
+async def add_overview_note_endpoint(
+    student_id: str,
+    note_data: OverviewNoteCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        creator_user_obj = await crud_user.get_user_by_id(current_user["id"])
+        if not creator_user_obj:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="User not found in DB.")
+
+        updated_student = await crud_student.add_overview_note(
+            student_id=student_id,
+            note_data=note_data,
+            current_user_id=current_user["id"],
+            current_user_role=current_user["role"],
+            current_user=creator_user_obj
+        )
+        
+        if not updated_student:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+        
+        return updated_student
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to add note: {e}")
+    
+    
 @router.patch("/students/{student_id}", response_model=StudentPublic)
 async def update_student_endpoint(
     student_id: str,
