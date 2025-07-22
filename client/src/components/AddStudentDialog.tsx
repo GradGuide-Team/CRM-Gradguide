@@ -26,6 +26,7 @@ interface UniversityChoicePayload {
     course_name: string;
     course_link: string | null;
     intake_month: string;
+    application_status: "documents pending" | "documents received" | "application pending" | "application filed" | "conditional offer received" | "unconditional offer received" | "Uni finalized";
 }
 
 // Interface for the entire student data payload sent to the backend
@@ -65,8 +66,8 @@ const DEFAULT_UNIVERSITY_CHOICE_STATE: Omit<UniversityChoiceState, 'priority'> =
     course_name: '',
     course_link: '',
     intake_month: '',
+    application_status: 'documents pending',
 };
-
 export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddStudentDialogProps) {
     const { toast } = useToast();
     const { user } = useAuth();
@@ -204,6 +205,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                     course_name: choice.course_name,
                     course_link: choice.course_link === '' ? null : choice.course_link,
                     intake_month: choice.intake_month,
+                    application_status: choice.application_status || 'documents pending',
                 })),
             };
 
@@ -351,7 +353,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                         : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
                                         }`}
                                 /> */}
-                                <select 
+                                <select
                                     id="target_country"
                                     value={formData.target_country}
                                     onChange={handleInputChange}
@@ -359,7 +361,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                         ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
                                         : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
                                         }`}
-                                        
+
                                 >
                                     <option value="Australia">Australia</option>
                                     <option value="Canada">Canada</option>
@@ -562,6 +564,24 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                                 {fieldErrors[`intake_month-${index}`]}
                                             </p>
                                         )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor={`application_status-${index}`} className="text-sm font-medium">Application Status</Label>
+                                        <select
+                                            id={`application_status-${index}`}
+                                            name="application_status"
+                                            value={uniChoice.application_status}
+                                            onChange={(e) => handleUniChoiceChange(index, e)}
+                                            className="w-full px-3 py-2 border rounded-md transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        >
+                                            <option value="documents pending">Documents Pending</option>
+                                            <option value="documents received">Documents Received</option>
+                                            <option value="application pending">Application Pending</option>
+                                            <option value="application filed">Application Filed</option>
+                                            <option value="conditional offer received">Conditional Offer Received</option>
+                                            <option value="unconditional offer received">Unconditional Offer Received</option>
+                                            <option value="Uni finalized">Uni Finalized</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>

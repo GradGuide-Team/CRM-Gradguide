@@ -5,15 +5,39 @@ export interface UniversityChoice {
   course_name: string;
   course_link?: string;
   intake_month: string;
-  application_status: "Pending" | "Accepted" | "Rejected" | "Waitlisted";
+  application_status: "documents pending" | "documents received" | "application pending" | "application filed" | "conditional offer received" | "unconditional offer received" | "Uni finalized";
   offer_type: "Conditional" | "Unconditional";
   application_submitted: boolean;
   additional_docs_requested: boolean;
   loa_cas_received: boolean;
   loan_process_started: boolean;
   fee_payment_completed: boolean;
+  notes: UniversityNote[];
+}
+export interface ApplicationStatusLog {
+  previous_status: string | null;
+  new_status: string;
+  timestamp: string;
+  changed_by: AssignedCounselor;
+  university_choice_index: number;
 }
 
+export interface UniversityNote {
+  title: string | null;
+  description: string | null;
+  created_by: AssignedCounselor;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OverviewNote {
+  type: "manual" | "automatic";
+  title: string | null;
+  content: string | null;
+  created_by: AssignedCounselor;
+  created_at: string;
+  related_university_index: number | null;
+}
 export interface AssignedCounselor {
   id: string;
   name: string;
@@ -38,13 +62,12 @@ export interface Documents {
 }
 
 export interface VisaDocuments {
-  decision: "Pending" | "Approved" | "Rejected";
+  decision: "Pending" | "Accepted" | "Rejected";
   counselling_started: boolean;
   documents_received: boolean;
   application_filled: boolean;
   interview_scheduled: boolean;
 }
-
 export interface StudentDetail {
   _id: string;
   full_name: string;
@@ -61,10 +84,11 @@ export interface StudentDetail {
   documents: Documents;
   university_choices: UniversityChoice[];
   visa_documents: VisaDocuments;
+  status_logs: ApplicationStatusLog[];
+  overview_notes: OverviewNote[];
   created_at: string;
   updated_at: string;
 }
-
 export interface StudentTableItem {
   _id: string;
   full_name: string;
