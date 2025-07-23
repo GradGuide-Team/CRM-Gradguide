@@ -5,10 +5,8 @@ import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   ColumnDef,
-  ColumnFiltersState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   getSortedRowModel,
   SortingState,
   useReactTable,
@@ -48,6 +46,7 @@ import {
 } from "@/components/ui/table"
 import axiosInstance from "@/services/axiosInstance"
 import endpoints from "@/services/endpoints"
+import { useDebounce } from "@/hooks/useDebounce"
 
 export type Student = {
   _id: string
@@ -66,14 +65,33 @@ export type Student = {
   updated_at: string
 }
 
-const fetchStudents = async (skip: number, limit: number): Promise<Student[]> => {
+const fetchStudents = async (
+  skip: number,
+  limit: number,
+  nameSearch?: string,
+  countrySearch?: string
+): Promise<Student[]> => {
   try {
     // Debug: Log the token before making the request
     const token = localStorage.getItem('access_token');
     console.log('Token being used:', token ? `${token.substring(0, 20)}...` : 'No token found');
 
+    const params = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+      populate_counselor: 'true',
+      populate_creator: 'false'
+    });
+
+    if (nameSearch && nameSearch.trim()) {
+      params.append('name_search', nameSearch.trim());
+    }
+    if (countrySearch && countrySearch.trim()) {
+      params.append('country_search', countrySearch.trim());
+    }
+
     const response = await axiosInstance.get(
-      `${endpoints.getAllStudents}?skip=${skip}&limit=${limit}&populate_counselor=true&populate_creator=false`
+      `${endpoints.getAllStudents}?${params.toString()}`
     )
     console.log('Students API response:', response.data);
     return response.data
@@ -91,12 +109,19 @@ interface StudentsTableProps {
 
 export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
   const [studentToDelete, setStudentToDelete] = React.useState<Student | null>(null)
   const [isDeleting, setIsDeleting] = React.useState(false)
+
+  // Search state
+  const [nameSearch, setNameSearch] = React.useState("")
+  const [countrySearch, setCountrySearch] = React.useState("")
+
+  // Debounced search values
+  const debouncedNameSearch = useDebounce(nameSearch, 500)
+  const debouncedCountrySearch = useDebounce(countrySearch, 500)
 
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -126,8 +151,8 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['students', skip, pagination.pageSize],
-    queryFn: () => fetchStudents(skip, pagination.pageSize),
+    queryKey: ['students', skip, pagination.pageSize, debouncedNameSearch, debouncedCountrySearch],
+    queryFn: () => fetchStudents(skip, pagination.pageSize, debouncedNameSearch, debouncedCountrySearch),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -136,6 +161,11 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
       refetch()
     }
   }, [refetchTrigger, refetch])
+
+  // Reset pagination when search filters change
+  React.useEffect(() => {
+    setPagination(prev => ({ ...prev, pageIndex: 0 }))
+  }, [debouncedNameSearch, debouncedCountrySearch])
   const columns: ColumnDef<Student>[] = [
     {
       id: "select",
@@ -293,17 +323,14 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
     data: students || [],
     columns,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
     pageCount: students ? Math.ceil(students.length / pagination.pageSize) : 0,
     state: {
       sorting,
-      columnFilters,
       columnVisibility,
       rowSelection,
       pagination,
@@ -335,10 +362,14 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
         <div className="flex items-center space-x-2">
           <Input
             placeholder="Filter by name..."
-            value={(table.getColumn("full_name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("full_name")?.setFilterValue(event.target.value)
-            }
+            value={nameSearch}
+            onChange={(event) => setNameSearch(event.target.value)}
+            className="max-w-sm"
+          />
+          <Input
+            placeholder="Filter by country..."
+            value={countrySearch}
+            onChange={(event) => setCountrySearch(event.target.value)}
             className="max-w-sm"
           />
           {isLoading && (

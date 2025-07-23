@@ -85,18 +85,26 @@ async def create_student(student_data: StudentCreate, creator_user: User):
     return StudentPublic.model_validate(student.to_public_dict())
 
 async def get_all_students(
-    current_user_id: str, 
-    current_user_role: str, 
+    current_user_id: str,
+    current_user_role: str,
     skip: int = 0,
     limit: int = 10,
+    name_search: Optional[str] = None,
+    country_search: Optional[str] = None,
     populate_counselor: bool = False,
-    populate_creator: bool = False 
+    populate_creator: bool = False
 ) -> List[StudentPublic]:
     query_set = Student.objects
 
     if current_user_role == "member":
         query_set = query_set.filter(created_by=ObjectId(current_user_id))
-    
+
+    # Add search filters
+    if name_search:
+        query_set = query_set.filter(full_name__icontains=name_search)
+    if country_search:
+        query_set = query_set.filter(target_country__icontains=country_search)
+
     students = query_set.skip(skip).limit(limit)
     
     result = []
