@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ChevronDown, MoreHorizontal, Loader2, Delete, LucideDelete, Trash } from "lucide-react"
+import { ChevronDown, Loader2, Trash, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -30,9 +30,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -166,6 +163,15 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
   React.useEffect(() => {
     setPagination(prev => ({ ...prev, pageIndex: 0 }))
   }, [debouncedNameSearch, debouncedCountrySearch])
+
+  // Clear all filters
+  const clearFilters = () => {
+    setNameSearch("")
+    setCountrySearch("")
+  }
+
+  // Count active filters
+  const activeFiltersCount = [nameSearch, countrySearch].filter(Boolean).length
   const columns: ColumnDef<Student>[] = [
     {
       id: "select",
@@ -372,6 +378,17 @@ export function StudentsTable({ refetchTrigger }: StudentsTableProps = {}) {
             onChange={(event) => setCountrySearch(event.target.value)}
             className="max-w-sm"
           />
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              className="h-10 px-3"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear ({activeFiltersCount})
+            </Button>
+          )}
           {isLoading && (
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
