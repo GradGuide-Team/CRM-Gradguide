@@ -45,6 +45,8 @@ async def create_student_endpoint(
 async def read_student_endpoint(
     skip: int = Query(0,ge=0),
     limit: int = Query(10, le=10),
+    name_search: Optional[str] = Query(None, description="Search students by name"),
+    country_search: Optional[str] = Query(None, description="Filter students by country"),
     populate_counselor: bool = Query(True, description="Include full counselor details"),
     populate_creator: bool = Query(False, description="Include full creator details"), # NEW Query param
     current_user: dict = Depends(get_current_user)
@@ -54,6 +56,8 @@ async def read_student_endpoint(
         current_user_role=current_user["role"],
         skip=skip,
         limit=limit,
+        name_search=name_search,
+        country_search=country_search,
         populate_counselor=populate_counselor,
         populate_creator=populate_creator
     )
