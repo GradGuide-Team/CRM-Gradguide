@@ -130,12 +130,40 @@ class Documents(BaseModel):
     lor: bool = False
     resume: bool = False
 
+class SchoolMarksheet(BaseModel):
+    x_marksheet: str = Field(...)
+    x_school_name: str = Field(...)
+    x_cgpa: str = Field(...)
+    xii_marksheet: str = Field(...)
+    xii_school_name: str = Field(...)
+    xii_cgpa: str = Field(...)
+    xii_english: str = Field(...)
+    xii_maths: Optional[str] = None
+    xii_stream: str = Field(...)
+
+class UniversityDetails(BaseModel):
+    college_name: Optional[str] = None
+    branch_name: Optional[str] = None
+    fromYear: Optional[str] = None
+    toYear: Optional[str] = None
+
+class UniversityMarksheet(BaseModel):
+    semester: Optional[str] = None
+    cgpa: Optional[int] = None
+    backlog: Optional[int] = None
+    year: Optional[str] = None
+    
 class StudentCreate(BaseModel):
     full_name: str = Field(..., min_length=3, max_length=100)
     email_address: EmailStr
     phone_number: str = Field(..., min_length=10, max_length=20)
     target_country: str = Field(..., min_length=2, max_length=50)
     dob: date 
+    parents_contact: Optional[str] = None
+    parents_email: Optional[str] = None
+    school_marksheet: Optional[SchoolMarksheet] = None
+    university_details: Optional[UniversityDetails] = None  
+    university_marksheet: Optional[List[UniversityMarksheet]] = None 
     assigned_counselor_id: Optional[PyObjectId] = None 
     application_path: Literal["Direct", "SI", "Eduwise"] = "Direct"
     degree_type: Literal["Undergraduation", "Masters", "PHD"] = "Masters"
@@ -165,9 +193,13 @@ class StudentPublic(BaseModel):
     target_country: str
     degree_type: Optional[str] = None 
     dob: Optional[date] = None
+    parents_contact: Optional[str] = None
+    parents_email: Optional[str] = None
     assigned_counselor: Optional[dict] = None 
     assigned_counselor_id: Optional[PyObjectId] = None 
-
+    school_marksheet: Optional[SchoolMarksheet] = None  
+    university_details: Optional[UniversityDetails] = None 
+    university_marksheet: Optional[List[UniversityMarksheet]] = None 
     created_by: Optional[dict] = None 
     created_by_id: Optional[PyObjectId] = None 
 
@@ -192,7 +224,12 @@ class StudentUpdate(BaseModel):
     visa_documents: Optional[VisaDocuments] = None
     university_choices: Optional[List[UniversityChoiceUpdate]] = None 
     documents: Optional[Documents] = None
-
+    parents_contact: Optional[str] = None
+    parents_email: Optional[str] = None
+    school_marksheet: Optional[SchoolMarksheet] = None 
+    university_details: Optional[UniversityDetails] = None 
+    university_marksheet: Optional[List[UniversityMarksheet]] = None 
+    
     @field_validator('dob')
     @classmethod
     def dob_must_be_in_past(cls, v):

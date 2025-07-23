@@ -1,7 +1,7 @@
 # server/crud/student.py
 from datetime import datetime, timezone
 from typing import List, Optional
-from server.db.models import Student, User, UniversityChoice, DocumentsRequired, VisaDocuments, ApplicationStatusLog, OverviewNote, UniversityNote
+from server.db.models import Student, User, UniversityChoice, SchoolMarksheet, DocumentsRequired, VisaDocuments, ApplicationStatusLog, OverviewNote, UniversityNote, UniversityDetails, UniversityMarksheet
 from server.schemas.student import (
     StudentCreate, StudentPublic, StudentUpdate, UniversityNoteCreate, 
     UniversityNoteUpdate, OverviewNoteCreate, ApplicationStatusUpdateRequest
@@ -62,6 +62,19 @@ async def create_student(student_data: StudentCreate, creator_user: User):
             raise ValueError(f"Assigned counselor with ID {student_data.assigned_counselor_id} not found.")
         assigned_counselor_obj = counselor
 
+    school_marksheet_obj = None
+    if hasattr(student_data, 'school_marksheet') and student_data.school_marksheet:
+        school_marksheet_obj = SchoolMarksheet(**student_data.school_marksheet.model_dump())
+
+    university_details_obj = None
+    if hasattr(student_data, 'university_details') and student_data.university_details:
+        university_details_obj = UniversityDetails(**student_data.university_details.model_dump())
+
+    university_marksheet_docs = []
+    if hasattr(student_data, 'university_marksheet') and student_data.university_marksheet:
+        for marksheet in student_data.university_marksheet:
+            university_marksheet_docs.append(UniversityMarksheet(**marksheet.model_dump()))
+
     now_utc = datetime.now(timezone.utc).isoformat()
 
     student = Student(
@@ -74,6 +87,11 @@ async def create_student(student_data: StudentCreate, creator_user: User):
         dob=student_data.dob,
         created_by=creator_user, 
         application_path=student_data.application_path,
+        parents_contact=student_data.parents_contact,  # Add this
+        parents_email=student_data.parents_email,
+        school_marksheet=school_marksheet_obj,
+        university_details=university_details_obj,
+        university_marksheet=university_marksheet_docs,
         university_choices=university_choices_docs,
         status_logs=[],
         overview_notes=[],
@@ -334,9 +352,13 @@ async def update_student(
     # Handle university choices update (but not status changes - use separate endpoint for those)
     if "university_choices" in update_data and update_data["university_choices"] is not None:
         university_choices_docs = []
-        for choice_data in update_data["university_choices"]:
+        for index, choice_data in enumerate(update_data["university_choices"]):
             course_link_val = choice_data.get('course_link') 
             course_link_str = str(course_link_val) if isinstance(course_link_val, HttpUrl) else course_link_val
+
+            existing_notes = []
+            if index < len(student.university_choices):
+                existing_notes = student.university_choices[index].notes
 
             university_choices_docs.append(
                 UniversityChoice(
@@ -351,12 +373,32 @@ async def update_student(
                     loa_cas_received=choice_data.get('loa_cas_received', False),
                     loan_process_started=choice_data.get('loan_process_started', False),
                     fee_payment_completed=choice_data.get('fee_payment_completed', False),
-                    notes=[]  # Preserve existing notes or initialize empty
+                    notes=existing_notes
                 )
             )
         student.university_choices = university_choices_docs
         del update_data["university_choices"]
+        
+    if "school_marksheet" in update_data and update_data["school_marksheet"] is not None:
+        from server.db.models import SchoolMarksheet  # Add this import at top
+        school_marksheet_data = update_data["school_marksheet"]
+        school_marksheet_obj = SchoolMarksheet(**school_marksheet_data)
+        student.school_marksheet = school_marksheet_obj
+        del update_data["school_marksheet"]
+        
+    if "university_details" in update_data and update_data["university_details"] is not None:
+        university_details_data = update_data["university_details"]
+        university_details_obj = UniversityDetails(**university_details_data)
+        student.university_details = university_details_obj
+        del update_data["university_details"]
     
+    if "university_marksheet" in update_data and update_data["university_marksheet"] is not None:
+        university_marksheet_docs = []
+        for marksheet_data in update_data["university_marksheet"]:
+            university_marksheet_docs.append(UniversityMarksheet(**marksheet_data))
+        student.university_marksheet = university_marksheet_docs
+        del update_data["university_marksheet"]
+        
     # Handle other updates (documents, visa_documents, etc.)
     if "documents" in update_data and update_data["documents"] is not None:
         documents_data = update_data["documents"]

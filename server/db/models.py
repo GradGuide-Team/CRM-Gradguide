@@ -116,17 +116,44 @@ class VisaDocuments(EmbeddedDocument):
     application_filled = BooleanField(default=False)
     interview_scheduled = BooleanField(default=False)
 
-
+class SchoolMarksheet(EmbeddedDocument):
+    x_marksheet = StringField(required = True)
+    x_school_name = StringField(required = True)
+    x_cgpa = StringField(required = True)
+    xii_marksheet = StringField(required = True)
+    xii_school_name = StringField(required = True)
+    xii_cgpa = StringField(required = True)
+    xii_english = StringField(required = True)
+    xii_maths = StringField()
+    xii_stream = StringField(required = True)
+    
+class UniversityMarksheet(EmbeddedDocument):
+    semester = StringField()
+    cgpa = IntField()
+    backlog = IntField()
+    year = StringField()
+    
+class UniversityDetails(EmbeddedDocument):
+    college_name = StringField()
+    branch_name = StringField()
+    fromYear = StringField()
+    toYear = StringField()
+    
 class Student(Document):
     full_name = StringField(required = True)
     email_address = StringField(required = True)
     phone_number = StringField(required = True)
     target_country = StringField(required = True)
+    school_marksheet = EmbeddedDocumentField(SchoolMarksheet)
     dob = DateTimeField(required=True)
+    parents_contact = StringField()
+    parents_email = StringField()
     assigned_counselor = ReferenceField(User)
     created_by = ReferenceField(User, required = True)
     degree_type = StringField(choices = ["Undergraduation","Masters","PHD"])
     application_path = StringField(required = True)
+    university_details = EmbeddedDocumentField(UniversityDetails)
+    university_marksheet = ListField(EmbeddedDocumentField(UniversityMarksheet))
     university_choices = ListField(EmbeddedDocumentField(UniversityChoice))
     documents = EmbeddedDocumentField(DocumentsRequired, default=DocumentsRequired)
     visa_documents = EmbeddedDocumentField(VisaDocuments, default = VisaDocuments)
@@ -152,13 +179,29 @@ class Student(Document):
             "phone_number": self.phone_number,
             "dob":self.dob,
             "target_country": self.target_country,
+            "parents_contact": self.parents_contact,
+            "parents_email": self.parents_email,
             "application_path": self.application_path,
             "degree_type":self.degree_type,
             "university_choices": [choice.to_dict() for choice in self.university_choices],
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }
-
+        if self.school_marksheet:
+            data["school_marksheet"] = self.school_marksheet.to_mongo().to_dict()
+        else:
+            data["school_marksheet"] = None
+            
+        if self.university_details:
+            data["university_details"] = self.university_details.to_mongo().to_dict()
+        else:
+            data["university_details"] = None
+            
+        # Handle university_marksheet (optional, list of objects)
+        if self.university_marksheet:
+            data["university_marksheet"] = [marksheet.to_mongo().to_dict() for marksheet in self.university_marksheet]
+        else:
+            data["university_marksheet"] = []
         # Handle assigned counselor
         if self.assigned_counselor:
             if isinstance(self.assigned_counselor, User):
@@ -167,6 +210,7 @@ class Student(Document):
                 data["assigned_counselor_id"] = str(self.assigned_counselor.id)
         else:
             data["assigned_counselor"] = None
+            
 
         # Handle created by
         if self.created_by:
