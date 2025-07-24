@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -28,6 +29,24 @@ interface UniversityChoicePayload {
     intake_month: string;
     application_status: "documents pending" | "documents received" | "application pending" | "application filed" | "conditional offer received" | "unconditional offer received" | "Uni finalized";
 }
+interface SchoolMarksheet {
+    x_year: string
+    x_school_name: string
+    x_cgpa: string
+    xii_year: string
+    xii_school_name: string
+    xii_cgpa: string
+    xii_english: string
+    xii_maths?: string
+    xii_stream: string
+}
+
+interface UniversityDetails {
+    college_name: string;
+    branch_name: string;
+    fromYear: string;
+    toYear: string;
+}
 
 // Interface for the entire student data payload sent to the backend
 interface NewStudentData {
@@ -40,6 +59,10 @@ interface NewStudentData {
     degree_type: "Undergraduation" | "Masters" | "PHD";
     dob: string;
     university_choices: UniversityChoicePayload[];
+    school_marksheet: SchoolMarksheet;
+    university_details?: UniversityDetails;
+    parents_contact: string;
+    parents_email: string;
     documents?: {
         passport: boolean;
         marksheets: boolean;
@@ -79,7 +102,26 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         assigned_counselor_id: user?._id || '',
         application_path: 'Direct',
         degree_type: 'Undergraduation',
+        parents_contact: '',
+        parents_email: '',
         dob: '',
+        school_marksheet: {
+            x_year: '',
+            x_school_name: '',
+            x_cgpa: '',
+            xii_year: '',
+            xii_school_name: '',
+            xii_cgpa: '',
+            xii_english: '',
+            xii_maths: '',
+            xii_stream: ''
+        },
+        university_details: {
+            college_name: '',
+            branch_name: '',
+            fromYear: '',
+            toYear: ''
+        },
         university_choices: [{ ...DEFAULT_UNIVERSITY_CHOICE_STATE, priority: 'Priority 1 Choice' }],
     });
 
@@ -150,6 +192,38 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         }
     };
 
+    const handleSchoolMarksheetChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+
+        setFormData(prev => ({
+            ...prev,
+            school_marksheet: {
+                ...prev.school_marksheet,
+                [name]: value
+            }
+        }))
+        setFieldErrors(prev => ({ ...prev, [`school_marksheet_${name}`]: undefined }));
+    }
+
+    const handleUniversityDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+
+        setFormData(prev => ({
+            ...prev,
+            university_details: {
+                ...prev.university_details!,
+                [name]: value
+            }
+        }));
+        setFieldErrors(prev => ({ ...prev, [`university_details_${name}`]: undefined }));
+    };
+
+    const handleParentsContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({ ...prev, [id]: value }));
+        setFieldErrors(prev => ({ ...prev, [id]: undefined }));
+    };
+
     const handleSubmit = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -159,17 +233,22 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         setError(null);
         const currentFieldErrors: { [key: string]: string } = {};
 
-        if (!formData.full_name) currentFieldErrors.full_name = "Full Name is required.";
-        if (!formData.email_address) currentFieldErrors.email_address = "Email Address is required.";
-        if (!formData.phone_number) currentFieldErrors.phone_number = "Phone Number is required.";
-        if (!formData.target_country) currentFieldErrors.target_country = "Target Country is required.";
-        if (!formData.degree_type) currentFieldErrors.degree_type = "Degree Type is required.";
-        if (!formData.dob) currentFieldErrors.dob = "Date of Birth is required.";
-        formData.university_choices.forEach((uniChoice, index) => {
-            if (!uniChoice.university_name) currentFieldErrors[`university_name-${index}`] = "University Name is required.";
-            if (!uniChoice.course_name) currentFieldErrors[`course_name-${index}`] = "Course Name is required.";
-            if (!uniChoice.intake_month) currentFieldErrors[`intake_month-${index}`] = "Intake Month is required.";
-        });
+        if (!formData.school_marksheet.x_year) currentFieldErrors.school_marksheet_x_marksheet = "Class 10 marksheet is required.";
+        if (!formData.school_marksheet.x_school_name) currentFieldErrors.school_marksheet_x_school_name = "Class 10 school name is required.";
+        if (!formData.school_marksheet.x_cgpa) currentFieldErrors.school_marksheet_x_cgpa = "Class 10 CGPA is required.";
+        if (!formData.school_marksheet.xii_year) currentFieldErrors.school_marksheet_xii_marksheet = "Class 12 marksheet is required.";
+        if (!formData.school_marksheet.xii_school_name) currentFieldErrors.school_marksheet_xii_school_name = "Class 12 school name is required.";
+        if (!formData.school_marksheet.xii_cgpa) currentFieldErrors.school_marksheet_xii_cgpa = "Class 12 CGPA is required.";
+        if (!formData.school_marksheet.xii_english) currentFieldErrors.school_marksheet_xii_english = "Class 12 English marks are required.";
+        if (!formData.school_marksheet?.xii_stream) currentFieldErrors.school_marksheet_xii_stream = "Class 12 stream is required.";
+
+        // University details validations (only for Masters/PHD)
+        if (formData.degree_type === 'Masters' || formData.degree_type === 'PHD') {
+            if (!formData.university_details?.college_name) currentFieldErrors.university_details_college_name = "College name is required.";
+            if (!formData.university_details?.branch_name) currentFieldErrors.university_details_branch_name = "Branch name is required.";
+            if (!formData.university_details?.fromYear) currentFieldErrors.university_details_fromYear = "From year is required.";
+            if (!formData.university_details?.toYear) currentFieldErrors.university_details_toYear = "To year is required.";
+        }
 
         setFieldErrors(currentFieldErrors);
 
@@ -225,10 +304,29 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                     email_address: '',
                     phone_number: '',
                     target_country: '',
+                    parents_contact: '',
+                    parents_email: '',
                     assigned_counselor_id: user._id,
                     application_path: 'Direct',
                     degree_type: 'Undergraduation',
                     dob: '',
+                    school_marksheet: {
+                        x_year: '',
+                        x_school_name: '',
+                        x_cgpa: '',
+                        xii_year: '',
+                        xii_school_name: '',
+                        xii_cgpa: '',
+                        xii_english: '',
+                        xii_maths: '',
+                        xii_stream: ''
+                    },
+                    university_details: {
+                        college_name: '',
+                        branch_name: '',
+                        fromYear: '',
+                        toYear: ''
+                    },
                     university_choices: [{ ...DEFAULT_UNIVERSITY_CHOICE_STATE, priority: 'Priority 1 Choice' }],
                 });
                 setFieldErrors({});
@@ -424,6 +522,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
 
                             <div className="space-y-2">
                                 <Label htmlFor="dob" className="text-sm font-medium">Date of Birth *</Label>
+
                                 <Input
                                     id="dob"
                                     type="date"
@@ -444,7 +543,302 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                             </div>
                         </div>
                     </div>
+                    <div className="space-y-4 mx-2">
+                        <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            Parents Contact Information
+                        </h3>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="parents_contact" className="text-sm font-medium">Parents Contact</Label>
+                                <Input
+                                    id="parents_contact"
+                                    value={formData.parents_contact}
+                                    onChange={handleParentsContactChange}
+                                    placeholder="+1234567890"
+                                    className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="parents_email" className="text-sm font-medium">Parents Email</Label>
+                                <Input
+                                    id="parents_email"
+                                    type="email"
+                                    value={formData.parents_email}
+                                    onChange={handleParentsContactChange}
+                                    placeholder="parent@example.com"
+                                    className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Education Details Section */}
+                    <div className="space-y-4 mx-2">
+                        <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                            Education Details
+                        </h3>
+
+                        {/* Class 10 Details */}
+                        <div className="border border-neutral-300 dark:border-neutral-700 p-4 rounded-lg bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900">
+                            <h4 className="text-md font-semibold text-neutral-800 dark:text-neutral-200 mb-3">Class 10 Details *</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="x_year" className="text-sm font-medium">Year *</Label>
+                                    <Input
+                                        id="x_year"
+                                        name="x_year"
+                                        type="date"
+                                        value={formData.school_marksheet.x_year}
+                                        onChange={handleSchoolMarksheetChange}
+                                        max={new Date().toISOString().split('T')[0]}
+
+                                        className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.school_marksheet_x_marksheet ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                    />
+                                    {fieldErrors.school_marksheet_x_marksheet && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {fieldErrors.school_marksheet_x_marksheet}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="x_school_name" className="text-sm font-medium">School Name *</Label>
+                                    <Input
+                                        id="x_school_name"
+                                        name="x_school_name"
+                                        value={formData.school_marksheet.x_school_name}
+                                        onChange={handleSchoolMarksheetChange}
+                                        placeholder="ABC High School"
+                                        className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.school_marksheet_x_school_name ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                    />
+                                    {fieldErrors.school_marksheet_x_school_name && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {fieldErrors.school_marksheet_x_school_name}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="x_cgpa" className="text-sm font-medium">CGPA *</Label>
+                                    <Input
+                                        id="x_cgpa"
+                                        name="x_cgpa"
+                                        value={formData.school_marksheet.x_cgpa}
+                                        onChange={handleSchoolMarksheetChange}
+                                        placeholder="9.2"
+                                        className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.school_marksheet_x_cgpa ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                    />
+                                    {fieldErrors.school_marksheet_x_cgpa && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {fieldErrors.school_marksheet_x_cgpa}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Class 12 Details */}
+                        <div className="border border-neutral-300 dark:border-neutral-700 p-4 rounded-lg bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900">
+                            <h4 className="text-md font-semibold text-neutral-800 dark:text-neutral-200 mb-3">Class 12 Details *</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="xii_year" className="text-sm font-medium"> Year *</Label>
+
+                                    <Input
+                                        id="xii_year"
+                                        name="xii_year"
+                                        type="date"
+                                        value={formData.school_marksheet.xii_year}
+                                        onChange={handleSchoolMarksheetChange}
+                                        max={new Date().toISOString().split('T')[0]}
+
+                                        className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.school_marksheet_x_marksheet ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                    />
+                                    {fieldErrors.school_marksheet_xii_marksheet && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {fieldErrors.school_marksheet_xii_marksheet}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="xii_school_name" className="text-sm font-medium">School Name *</Label>
+                                    <Input
+                                        id="xii_school_name"
+                                        name="xii_school_name"
+                                        value={formData.school_marksheet.xii_school_name}
+                                        onChange={handleSchoolMarksheetChange}
+                                        placeholder="XYZ Senior Secondary School"
+                                        className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.school_marksheet_xii_school_name ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                    />
+                                    {fieldErrors.school_marksheet_xii_school_name && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {fieldErrors.school_marksheet_xii_school_name}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="xii_cgpa" className="text-sm font-medium">CGPA *</Label>
+                                    <Input
+                                        id="xii_cgpa"
+                                        name="xii_cgpa"
+                                        value={formData.school_marksheet.xii_cgpa}
+                                        onChange={handleSchoolMarksheetChange}
+                                        placeholder="9.5"
+                                        className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.school_marksheet_xii_cgpa ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                    />
+                                    {fieldErrors.school_marksheet_xii_cgpa && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {fieldErrors.school_marksheet_xii_cgpa}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="xii_english" className="text-sm font-medium">English Marks *</Label>
+                                    <Input
+                                        id="xii_english"
+                                        name="xii_english"
+                                        value={formData.school_marksheet.xii_english}
+                                        onChange={handleSchoolMarksheetChange}
+                                        placeholder="85"
+                                        className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.school_marksheet_xii_english ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                    />
+                                    {fieldErrors.school_marksheet_xii_english && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {fieldErrors.school_marksheet_xii_english}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="xii_maths" className="text-sm font-medium">Maths Marks</Label>
+                                    <Input
+                                        id="xii_maths"
+                                        name="xii_maths"
+                                        value={formData.school_marksheet.xii_maths || ''}
+                                        onChange={handleSchoolMarksheetChange}
+                                        placeholder="90 (optional)"
+                                        className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="xii_stream" className="text-sm font-medium">Stream *</Label>
+                                    <select
+                                        id="xii_stream"
+                                        name="xii_stream"
+                                        value={formData.school_marksheet.xii_stream}
+                                        onChange={handleSchoolMarksheetChange}
+                                        className={`w-full px-3 py-2 border rounded-md transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.school_marksheet_xii_stream ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                    >
+                                        <option value="">Select Stream</option>
+                                        <option value="Science">Science</option>
+                                        <option value="Commerce">Commerce</option>
+                                        <option value="Arts">Arts</option>
+                                    </select>
+                                    {fieldErrors.school_marksheet_xii_stream && (
+                                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {fieldErrors.school_marksheet_xii_stream}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* University Details - Only show for Masters/PHD */}
+                        {(formData.degree_type === 'Masters' || formData.degree_type === 'PHD') && (
+                            <div className="border border-neutral-300 dark:border-neutral-700 p-4 rounded-lg bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900">
+                                <h4 className="text-md font-semibold text-neutral-800 dark:text-neutral-200 mb-3">University Details *</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="college_name" className="text-sm font-medium">College Name *</Label>
+                                        <Input
+                                            id="college_name"
+                                            name="college_name"
+                                            value={formData.university_details?.college_name || ''}
+                                            onChange={handleUniversityDetailsChange}
+                                            placeholder="ABC University"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.university_details_college_name ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                        />
+                                        {fieldErrors.university_details_college_name && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.university_details_college_name}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="branch_name" className="text-sm font-medium">Branch Name *</Label>
+                                        <Input
+                                            id="branch_name"
+                                            name="branch_name"
+                                            value={formData.university_details?.branch_name || ''}
+                                            onChange={handleUniversityDetailsChange}
+                                            placeholder="Computer Science Engineering"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.university_details_branch_name ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                        />
+                                        {fieldErrors.university_details_branch_name && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.university_details_branch_name}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="fromYear" className="text-sm font-medium">From Year *</Label>
+                                        <Input
+                                            id="fromYear"
+                                            name="fromYear"
+                                            value={formData.university_details?.fromYear || ''}
+                                            onChange={handleUniversityDetailsChange}
+                                            placeholder="2020"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.university_details_fromYear ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                        />
+                                        {fieldErrors.university_details_fromYear && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.university_details_fromYear}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="toYear" className="text-sm font-medium">To Year *</Label>
+                                        <Input
+                                            id="toYear"
+                                            name="toYear"
+                                            value={formData.university_details?.toYear || ''}
+                                            onChange={handleUniversityDetailsChange}
+                                            placeholder="2024"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.university_details_toYear ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                        />
+                                        {fieldErrors.university_details_toYear && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.university_details_toYear}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     {/* Dynamic University Choices Section */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
