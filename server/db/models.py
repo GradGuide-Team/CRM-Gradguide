@@ -117,10 +117,10 @@ class VisaDocuments(EmbeddedDocument):
     interview_scheduled = BooleanField(default=False)
 
 class SchoolMarksheet(EmbeddedDocument):
-    x_marksheet = StringField(required = True)
+    x_year = StringField(required = True)
     x_school_name = StringField(required = True)
     x_cgpa = StringField(required = True)
-    xii_marksheet = StringField(required = True)
+    xii_year = StringField(required = True)
     xii_school_name = StringField(required = True)
     xii_cgpa = StringField(required = True)
     xii_english = StringField(required = True)

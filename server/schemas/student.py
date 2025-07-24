@@ -131,10 +131,10 @@ class Documents(BaseModel):
     resume: bool = False
 
 class SchoolMarksheet(BaseModel):
-    x_marksheet: str = Field(...)
+    x_year: str = Field(...)
     x_school_name: str = Field(...)
     x_cgpa: str = Field(...)
-    xii_marksheet: str = Field(...)
+    xii_year: str = Field(...)
     xii_school_name: str = Field(...)
     xii_cgpa: str = Field(...)
     xii_english: str = Field(...)
