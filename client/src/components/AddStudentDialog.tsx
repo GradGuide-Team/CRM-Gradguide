@@ -41,6 +41,16 @@ interface SchoolMarksheet {
     xii_stream: string
 }
 
+interface CollegeDetails {
+    college_name: string;
+    branch_name: string;
+    from_year: string;
+    to_year: string;
+    cgpa: string;
+    university_name: string;
+    degree_earned: string;
+}
+
 interface UniversityDetails {
     college_name: string;
     branch_name: string;
@@ -60,6 +70,7 @@ interface NewStudentData {
     dob: string;
     university_choices: UniversityChoicePayload[];
     school_marksheet: SchoolMarksheet;
+    college_details?: CollegeDetails;
     university_details?: UniversityDetails;
     parents_contact: string;
     parents_email: string;
