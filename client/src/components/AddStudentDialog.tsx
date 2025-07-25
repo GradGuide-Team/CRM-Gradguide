@@ -41,21 +41,26 @@ interface SchoolMarksheet {
     xii_stream: string
 }
 
+interface SemesterResult {
+    semester: string;
+    year: string;
+    cgpa: string;
+    grade: string;
+    kt: string;
+}
+
 interface CollegeDetails {
     college_name: string;
     branch_name: string;
-    from_year: string;
-    to_year: string;
-    cgpa: string;
+    stream: string;
     university_name: string;
     degree_earned: string;
-}
-
-interface UniversityDetails {
-    college_name: string;
-    branch_name: string;
-    fromYear: string;
-    toYear: string;
+    start_year: string;
+    end_year: string;
+    semesters: SemesterResult[];
+    overall_cgpa: string;
+    final_grade: string;
+    total_kt: string;
 }
 
 // Interface for the entire student data payload sent to the backend
@@ -71,7 +76,6 @@ interface NewStudentData {
     university_choices: UniversityChoicePayload[];
     school_marksheet: SchoolMarksheet;
     college_details?: CollegeDetails;
-    university_details?: UniversityDetails;
     parents_contact: string;
     parents_email: string;
     documents?: {
@@ -127,11 +131,24 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
             xii_maths: '',
             xii_stream: ''
         },
-        university_details: {
+        college_details: {
             college_name: '',
             branch_name: '',
-            fromYear: '',
-            toYear: ''
+            stream: '',
+            university_name: '',
+            degree_earned: 'B.Tech',
+            start_year: '',
+            end_year: '',
+            semesters: Array(8).fill(0).map((_, i) => ({
+                semester: `SEM${i + 1}`,
+                year: '',
+                cgpa: '',
+                grade: '',
+                kt: '0'
+            })),
+            overall_cgpa: '',
+            final_grade: '',
+            total_kt: '0'
         },
         university_choices: [{ ...DEFAULT_UNIVERSITY_CHOICE_STATE, priority: 'Priority 1 Choice' }],
     });
@@ -216,26 +233,50 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         setFieldErrors(prev => ({ ...prev, [`school_marksheet_${name}`]: undefined }));
     }
 
-    const handleUniversityDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-
-        setFormData(prev => ({
-            ...prev,
-            university_details: {
-                ...prev.university_details!,
-                [name]: value
-            }
-        }));
-        setFieldErrors(prev => ({ ...prev, [`university_details_${name}`]: undefined }));
-    };
-
     const handleParentsContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
         setFormData(prev => ({ ...prev, [id]: value }));
         setFieldErrors(prev => ({ ...prev, [id]: undefined }));
     };
 
-    const handleSubmit = async (e: React.MouseEvent) => {
+    const handleCollegeDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        setFormData(prev => ({
+            ...prev,
+            college_details: {
+                ...prev.college_details!,
+                [e.target.name]: e.target.value
+            }
+        }));
+    };
+
+    const handleSemesterChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => {
+            const updatedSemesters = [...prev.college_details!.semesters];
+            updatedSemesters[index] = {
+                ...updatedSemesters[index],
+                [name]: value
+            };
+            
+            // Calculate total KT and overall CGPA
+            const totalKT = updatedSemesters.reduce((sum, sem) => sum + (parseInt(sem.kt) || 0), 0);
+            const validSemesters = updatedSemesters.filter(sem => sem.cgpa && !isNaN(parseFloat(sem.cgpa)));
+            const totalCGPA = validSemesters.reduce((sum, sem) => sum + parseFloat(sem.cgpa), 0);
+            const avgCGPA = validSemesters.length > 0 ? (totalCGPA / validSemesters.length).toFixed(2) : '';
+
+            return {
+                ...prev,
+                college_details: {
+                    ...prev.college_details!,
+                    semesters: updatedSemesters,
+                    total_kt: totalKT.toString(),
+                    overall_cgpa: avgCGPA
+                }
+            };
+        });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         e.stopPropagation();
         console.log("Counselor ID ", user?._id)
@@ -244,22 +285,14 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         setError(null);
         const currentFieldErrors: { [key: string]: string } = {};
 
-        if (!formData.school_marksheet.x_year) currentFieldErrors.school_marksheet_x_marksheet = "Class 10 marksheet is required.";
+        if (!formData.school_marksheet.x_year) currentFieldErrors.school_marksheet_x_year = "Class 10 year is required.";
         if (!formData.school_marksheet.x_school_name) currentFieldErrors.school_marksheet_x_school_name = "Class 10 school name is required.";
         if (!formData.school_marksheet.x_cgpa) currentFieldErrors.school_marksheet_x_cgpa = "Class 10 CGPA is required.";
-        if (!formData.school_marksheet.xii_year) currentFieldErrors.school_marksheet_xii_marksheet = "Class 12 marksheet is required.";
+        if (!formData.school_marksheet.xii_year) currentFieldErrors.school_marksheet_xii_year = "Class 12 year is required.";
         if (!formData.school_marksheet.xii_school_name) currentFieldErrors.school_marksheet_xii_school_name = "Class 12 school name is required.";
         if (!formData.school_marksheet.xii_cgpa) currentFieldErrors.school_marksheet_xii_cgpa = "Class 12 CGPA is required.";
         if (!formData.school_marksheet.xii_english) currentFieldErrors.school_marksheet_xii_english = "Class 12 English marks are required.";
         if (!formData.school_marksheet?.xii_stream) currentFieldErrors.school_marksheet_xii_stream = "Class 12 stream is required.";
-
-        // University details validations (only for Masters/PHD)
-        if (formData.degree_type === 'Masters' || formData.degree_type === 'PHD') {
-            if (!formData.university_details?.college_name) currentFieldErrors.university_details_college_name = "College name is required.";
-            if (!formData.university_details?.branch_name) currentFieldErrors.university_details_branch_name = "Branch name is required.";
-            if (!formData.university_details?.fromYear) currentFieldErrors.university_details_fromYear = "From year is required.";
-            if (!formData.university_details?.toYear) currentFieldErrors.university_details_toYear = "To year is required.";
-        }
 
         setFieldErrors(currentFieldErrors);
 
@@ -286,22 +319,45 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         }
 
         try {
-            const payload: NewStudentData = {
-                ...formData,
-                assigned_counselor_id: user._id,
+            const studentData: any = {
+                full_name: formData.full_name,
+                email_address: formData.email_address,
+                phone_number: formData.phone_number,
+                target_country: formData.target_country,
                 dob: formData.dob,
                 university_choices: formData.university_choices.map(choice => ({
                     university_name: choice.university_name,
                     course_name: choice.course_name,
-                    course_link: choice.course_link === '' ? null : choice.course_link,
+                    course_link: choice.course_link || null,
                     intake_month: choice.intake_month,
                     application_status: choice.application_status || 'documents pending',
                 })),
+                school_marksheet: {
+                    ...formData.school_marksheet,
+                    xii_maths: formData.school_marksheet.xii_maths || ''
+                }
             };
 
-            console.log("Final payload:", payload); // Add this to debug
+            // Add college details if degree type is Masters
+            if (formData.degree_type === 'Masters' && formData.college_details) {
+                studentData.college_details = {
+                    college_name: formData.college_details.college_name,
+                    branch_name: formData.college_details.branch_name,
+                    stream: formData.college_details.stream,
+                    university_name: formData.college_details.university_name,
+                    degree_earned: formData.college_details.degree_earned,
+                    start_year: formData.college_details.start_year,
+                    end_year: formData.college_details.end_year,
+                    semesters: formData.college_details.semesters,
+                    overall_cgpa: formData.college_details.overall_cgpa,
+                    final_grade: formData.college_details.final_grade,
+                    total_kt: formData.college_details.total_kt
+                };
+            }
 
-            const response = await axiosInstance.post(endpoints.student, payload);
+            console.log("Final payload:", studentData); // Add this to debug
+
+            const response = await axiosInstance.post(endpoints.student, studentData);
 
             if (response.status === 201 || response.status === 200) {
                 toast({
@@ -770,85 +826,222 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                             </div>
                         </div>
 
-                        {/* University Details - Only show for Masters/PHD */}
-                        {(formData.degree_type === 'Masters' || formData.degree_type === 'PHD') && (
+                        {/* College Details - Only show for Masters */}
+                        {formData.degree_type === 'Masters' && (
                             <div className="border border-neutral-300 dark:border-neutral-700 p-4 rounded-lg bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900">
-                                <h4 className="text-md font-semibold text-neutral-800 dark:text-neutral-200 mb-3">University Details *</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <h4 className="text-md font-semibold text-neutral-800 dark:text-neutral-200 mb-3">College Details *</h4>
+                                
+                                {/* College Basic Info */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="college_name" className="text-sm font-medium">College Name *</Label>
                                         <Input
                                             id="college_name"
                                             name="college_name"
-                                            value={formData.university_details?.college_name || ''}
-                                            onChange={handleUniversityDetailsChange}
-                                            placeholder="ABC University"
-                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.university_details_college_name ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                            value={formData.college_details?.college_name || ''}
+                                            onChange={handleCollegeDetailsChange}
+                                            placeholder="Enter college name"
+                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                         />
-                                        {fieldErrors.university_details_college_name && (
-                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {fieldErrors.university_details_college_name}
-                                            </p>
-                                        )}
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="branch_name" className="text-sm font-medium">Branch Name *</Label>
+                                        <Label htmlFor="university_name" className="text-sm font-medium">University Name *</Label>
+                                        <Input
+                                            id="university_name"
+                                            name="university_name"
+                                            value={formData.college_details?.university_name || ''}
+                                            onChange={handleCollegeDetailsChange}
+                                            placeholder="Enter university name"
+                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="branch_name" className="text-sm font-medium">Branch/Department *</Label>
                                         <Input
                                             id="branch_name"
                                             name="branch_name"
-                                            value={formData.university_details?.branch_name || ''}
-                                            onChange={handleUniversityDetailsChange}
-                                            placeholder="Computer Science Engineering"
-                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.university_details_branch_name ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                            value={formData.college_details?.branch_name || ''}
+                                            onChange={handleCollegeDetailsChange}
+                                            placeholder="e.g., Computer Science"
+                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                         />
-                                        {fieldErrors.university_details_branch_name && (
-                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {fieldErrors.university_details_branch_name}
-                                            </p>
-                                        )}
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="fromYear" className="text-sm font-medium">From Year *</Label>
+                                        <Label htmlFor="stream" className="text-sm font-medium">Stream *</Label>
                                         <Input
-                                            id="fromYear"
-                                            name="fromYear"
-                                            value={formData.university_details?.fromYear || ''}
-                                            onChange={handleUniversityDetailsChange}
-                                            placeholder="2020"
-                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.university_details_fromYear ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                            id="stream"
+                                            name="stream"
+                                            value={formData.college_details?.stream || ''}
+                                            onChange={handleCollegeDetailsChange}
+                                            placeholder="e.g., Engineering, Commerce, Arts"
+                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                         />
-                                        {fieldErrors.university_details_fromYear && (
-                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {fieldErrors.university_details_fromYear}
-                                            </p>
-                                        )}
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="toYear" className="text-sm font-medium">To Year *</Label>
+                                        <Label htmlFor="degree_earned" className="text-sm font-medium">Degree Earned *</Label>
+                                        <select
+                                            id="degree_earned"
+                                            name="degree_earned"
+                                            value={formData.college_details?.degree_earned || ''}
+                                            onChange={handleCollegeDetailsChange}
+                                            className="w-full px-3 py-2 border rounded-md transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        >
+                                            <option value="B.Tech">B.Tech</option>
+                                            <option value="B.E.">B.E.</option>
+                                            <option value="B.Sc.">B.Sc.</option>
+                                            <option value="B.Com">B.Com</option>
+                                            <option value="BA">BA</option>
+                                            <option value="BBA">BBA</option>
+                                            <option value="BCA">BCA</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="start_year" className="text-sm font-medium">Start Year *</Label>
                                         <Input
-                                            id="toYear"
-                                            name="toYear"
-                                            value={formData.university_details?.toYear || ''}
-                                            onChange={handleUniversityDetailsChange}
-                                            placeholder="2024"
-                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.university_details_toYear ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                                            type="number"
+                                            id="start_year"
+                                            name="start_year"
+                                            value={formData.college_details?.start_year || ''}
+                                            onChange={handleCollegeDetailsChange}
+                                            placeholder="e.g., 2020"
+                                            min="1900"
+                                            max={new Date().getFullYear()}
+                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                         />
-                                        {fieldErrors.university_details_toYear && (
-                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {fieldErrors.university_details_toYear}
-                                            </p>
-                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="end_year" className="text-sm font-medium">End Year *</Label>
+                                        <Input
+                                            type="number"
+                                            id="end_year"
+                                            name="end_year"
+                                            value={formData.college_details?.end_year || ''}
+                                            onChange={handleCollegeDetailsChange}
+                                            placeholder="e.g., 2024"
+                                            min="1900"
+                                            max={new Date().getFullYear() + 5}
+                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="overall_cgpa" className="text-sm font-medium">Overall CGPA *</Label>
+                                        <Input
+                                            type="number"
+                                            id="overall_cgpa"
+                                            name="overall_cgpa"
+                                            value={formData.college_details?.overall_cgpa || ''}
+                                            onChange={handleCollegeDetailsChange}
+                                            placeholder="e.g., 8.5"
+                                            step="0.01"
+                                            min="0"
+                                            max="10"
+                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="final_grade" className="text-sm font-medium">Final Grade</Label>
+                                        <Input
+                                            id="final_grade"
+                                            name="final_grade"
+                                            value={formData.college_details?.final_grade || ''}
+                                            onChange={handleCollegeDetailsChange}
+                                            placeholder="e.g., A, B+, etc."
+                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="total_kt" className="text-sm font-medium">Total KT (Backlogs)</Label>
+                                        <Input
+                                            type="number"
+                                            id="total_kt"
+                                            name="total_kt"
+                                            value={formData.college_details?.total_kt || '0'}
+                                            onChange={handleCollegeDetailsChange}
+                                            min="0"
+                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Semester-wise Results */}
+                                <div className="mt-6">
+                                    <h5 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">Semester-wise Results</h5>
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full bg-white dark:bg-neutral-800 rounded-lg overflow-hidden">
+                                            <thead className="bg-gray-100 dark:bg-neutral-700">
+                                                <tr>
+                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Semester</th>
+                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Year</th>
+                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">CGPA/%</th>
+                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Grade</th>
+                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">KT</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
+                                                {formData.college_details?.semesters?.map((semester, index) => (
+                                                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-neutral-700/50">
+                                                        <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                            {semester.semester}
+                                                        </td>
+                                                        <td className="px-4 py-2 whitespace-nowrap">
+                                                            <Input
+                                                                type="text"
+                                                                name="year"
+                                                                value={semester.year || ''}
+                                                                onChange={(e) => handleSemesterChange(index, e as any)}
+                                                                placeholder="Year"
+                                                                className="w-24 px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-neutral-800 dark:border-neutral-600"
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-2 whitespace-nowrap">
+                                                            <Input
+                                                                type="text"
+                                                                name="cgpa"
+                                                                value={semester.cgpa || ''}
+                                                                onChange={(e) => handleSemesterChange(index, e as any)}
+                                                                placeholder="CGPA/%"
+                                                                className="w-24 px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-neutral-800 dark:border-neutral-600"
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-2 whitespace-nowrap">
+                                                            <Input
+                                                                type="text"
+                                                                name="grade"
+                                                                value={semester.grade || ''}
+                                                                onChange={(e) => handleSemesterChange(index, e as any)}
+                                                                placeholder="Grade"
+                                                                className="w-16 px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-neutral-800 dark:border-neutral-600"
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-2 whitespace-nowrap">
+                                                            <Input
+                                                                type="number"
+                                                                name="kt"
+                                                                value={semester.kt || '0'}
+                                                                onChange={(e) => handleSemesterChange(index, e as any)}
+                                                                min="0"
+                                                                className="w-16 px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-neutral-800 dark:border-neutral-600"
+                                                            />
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
                         )}
+
                     </div>
                     {/* Dynamic University Choices Section */}
                     <div className="space-y-4">
