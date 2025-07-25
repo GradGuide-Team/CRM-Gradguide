@@ -30,6 +30,9 @@ async def create_student_endpoint(
             )
 
     try:
+        # Log the incoming request data for debugging
+        print(f"Creating student with data: {student_in.model_dump()}")
+
         creator_user_obj = await crud_user.get_user_by_id(current_user["id"])
         if not creator_user_obj:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Creator user not found in DB.")
@@ -37,8 +40,13 @@ async def create_student_endpoint(
         student = await crud_student.create_student(student_in, creator_user_obj)
         return student
     except ValueError as e:
+        print(f"Validation error creating student: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
+        print(f"Unexpected error creating student: {e}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to create student: {e}")
 
 @router.get("/students",response_model=List[StudentPublic])

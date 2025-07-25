@@ -43,12 +43,20 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     (error: AxiosError) => {
-        console.error('Response interceptor - Error:', error.response?.status, error.config?.url);
-        
+        // Enhanced error logging with more details
+        console.error('Response interceptor - Error Details:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            url: error.config?.url,
+            method: error.config?.method,
+            data: error.response?.data,
+            message: error.message
+        });
+
         if (error.response && error.response.status === 401) {
             console.error('Authentication error: Token expired or invalid.');
             console.error('Response data:', error.response.data);
-            
+
             // Check if we need to redirect to login
             const currentPath = window.location.pathname;
             if (currentPath !== '/login' && currentPath !== '/register') {
@@ -59,6 +67,15 @@ axiosInstance.interceptors.response.use(
                 localStorage.removeItem('user');
                 window.location.href = '/login';
             }
+        } else if (error.response && error.response.status === 422) {
+            // Special handling for validation errors
+            console.error('Validation Error (422):', {
+                url: error.config?.url,
+                method: error.config?.method,
+                requestData: error.config?.data,
+                responseData: error.response.data,
+                validationDetails: error.response.data?.detail
+            });
         } else if (error.response) {
             const detail = (error.response.data && typeof error.response.data === 'object' && 'detail' in error.response.data)
                 ? (error.response.data as { detail?: string }).detail
@@ -66,6 +83,7 @@ axiosInstance.interceptors.response.use(
             console.error(`API Error: ${error.response.status} - ${detail || error.message}`);
         } else if (error.request) {
             console.error('Network Error: No response received from server.');
+            console.error('Request details:', error.request);
         } else {
             console.error('Request Setup Error:', error.message);
         }

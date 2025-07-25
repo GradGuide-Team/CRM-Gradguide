@@ -28,6 +28,13 @@ interface UniversityChoicePayload {
     course_link: string | null;
     intake_month: string;
     application_status: "documents pending" | "documents received" | "application pending" | "application filed" | "conditional offer received" | "unconditional offer received" | "Uni finalized";
+    offer_type: "Conditional" | "Unconditional";
+    application_submitted: boolean;
+    additional_docs_requested: boolean;
+    loa_cas_received: boolean;
+    loan_process_started: boolean;
+    fee_payment_completed: boolean;
+    notes: any[];
 }
 interface SchoolMarksheet {
     x_year: string
@@ -86,6 +93,13 @@ interface NewStudentData {
         lor: boolean;
         resume: boolean;
     };
+    visa_documents?: {
+        decision: "Pending" | "Accepted" | "Rejected";
+        counselling_started: boolean;
+        documents_received: boolean;
+        application_filled: boolean;
+        interview_scheduled: boolean;
+    };
 }
 
 // Interface for a single university choice as it's MANAGED IN THE FRONTEND STATE
@@ -105,6 +119,13 @@ const DEFAULT_UNIVERSITY_CHOICE_STATE: Omit<UniversityChoiceState, 'priority'> =
     course_link: '',
     intake_month: '',
     application_status: 'documents pending',
+    offer_type: 'Conditional',
+    application_submitted: false,
+    additional_docs_requested: false,
+    loa_cas_received: false,
+    loan_process_started: false,
+    fee_payment_completed: false,
+    notes: []
 };
 export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddStudentDialogProps) {
     const { toast } = useToast();
@@ -319,45 +340,72 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         }
 
         try {
-            const studentData: any = {
-                full_name: formData.full_name,
-                email_address: formData.email_address,
-                phone_number: formData.phone_number,
-                target_country: formData.target_country,
-                dob: formData.dob,
+            // Convert date string to proper format (YYYY-MM-DD)
+            const dobFormatted = formData.dob ? new Date(formData.dob).toISOString().split('T')[0] : '';
+
+            const payload: NewStudentData = {
+                ...formData,
+                assigned_counselor_id: user._id,
+                dob: dobFormatted,
                 university_choices: formData.university_choices.map(choice => ({
                     university_name: choice.university_name,
                     course_name: choice.course_name,
-                    course_link: choice.course_link || null,
+                    course_link: choice.course_link === '' ? null : choice.course_link,
                     intake_month: choice.intake_month,
                     application_status: choice.application_status || 'documents pending',
+                    offer_type: 'Conditional',
+                    application_submitted: false,
+                    additional_docs_requested: false,
+                    loa_cas_received: false,
+                    loan_process_started: false,
+                    fee_payment_completed: false,
+                    notes: []
                 })),
-                school_marksheet: {
-                    ...formData.school_marksheet,
-                    xii_maths: formData.school_marksheet.xii_maths || ''
+                documents: {
+                    passport: false,
+                    marksheets: false,
+                    english_exam: false,
+                    sop: false,
+                    lor: false,
+                    resume: false
+                },
+                visa_documents: {
+                    decision: 'Pending',
+                    counselling_started: false,
+                    documents_received: false,
+                    application_filled: false,
+                    interview_scheduled: false
                 }
             };
 
-            // Add college details if degree type is Masters
-            if (formData.degree_type === 'Masters' && formData.college_details) {
-                studentData.college_details = {
-                    college_name: formData.college_details.college_name,
-                    branch_name: formData.college_details.branch_name,
-                    stream: formData.college_details.stream,
-                    university_name: formData.college_details.university_name,
-                    degree_earned: formData.college_details.degree_earned,
-                    start_year: formData.college_details.start_year,
-                    end_year: formData.college_details.end_year,
-                    semesters: formData.college_details.semesters,
-                    overall_cgpa: formData.college_details.overall_cgpa,
-                    final_grade: formData.college_details.final_grade,
-                    total_kt: formData.college_details.total_kt
-                };
+            // Enhanced payload validation and logging
+            console.log("Final payload:", payload);
+            console.log("Payload validation:", {
+                hasRequiredFields: !!(payload.full_name && payload.email_address && payload.dob),
+                dobFormat: payload.dob,
+                dobOriginal: formData.dob,
+                universityChoicesCount: payload.university_choices.length,
+                assignedCounselorId: payload.assigned_counselor_id
+            });
+
+            // Additional validation before sending
+            if (!payload.dob || payload.dob === '') {
+                throw new Error("Date of birth is required and must be a valid date.");
             }
 
-            console.log("Final payload:", studentData); // Add this to debug
+            if (!payload.university_choices || payload.university_choices.length === 0) {
+                throw new Error("At least one university choice is required.");
+            }
 
-            const response = await axiosInstance.post(endpoints.student, studentData);
+            // Validate university choices
+            for (let i = 0; i < payload.university_choices.length; i++) {
+                const choice = payload.university_choices[i];
+                if (!choice.university_name || !choice.course_name || !choice.intake_month) {
+                    throw new Error(`University choice ${i + 1} is missing required fields.`);
+                }
+            }
+
+            const response = await axiosInstance.post(endpoints.student, payload);
 
             if (response.status === 201 || response.status === 200) {
                 toast({
@@ -388,12 +436,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                         xii_maths: '',
                         xii_stream: ''
                     },
-                    university_details: {
-                        college_name: '',
-                        branch_name: '',
-                        fromYear: '',
-                        toYear: ''
-                    },
+
                     university_choices: [{ ...DEFAULT_UNIVERSITY_CHOICE_STATE, priority: 'Priority 1 Choice' }],
                 });
                 setFieldErrors({});
@@ -405,7 +448,28 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                 throw new Error(response.data?.detail || "Failed to add student with unexpected status.");
             }
         } catch (err: any) {
-            const errorMessage = err.response?.data?.detail || err.message || "An unknown error occurred.";
+            console.error("Error adding student - Full error object:", err);
+            console.error("Error response data:", err.response?.data);
+            console.error("Error status:", err.response?.status);
+
+            let errorMessage = "An unknown error occurred.";
+
+            if (err.response?.status === 422) {
+                // Handle validation errors specifically
+                const validationErrors = err.response?.data?.detail;
+                if (Array.isArray(validationErrors)) {
+                    errorMessage = validationErrors.map((error: any) =>
+                        `${error.loc?.join('.')} - ${error.msg}`
+                    ).join(', ');
+                } else if (typeof validationErrors === 'string') {
+                    errorMessage = validationErrors;
+                } else {
+                    errorMessage = "Validation error: Please check all required fields.";
+                }
+            } else {
+                errorMessage = err.response?.data?.detail || err.message || "An unknown error occurred.";
+            }
+
             setError(errorMessage);
             toast({
                 title: "Error adding student",
