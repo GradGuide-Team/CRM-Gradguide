@@ -10,5 +10,6 @@ const endpoints = {
     updateApplicationStatus: `/students`,
     addUniversityNote: `/students`,
     addOverviewNote: `/students`,
+    getStudentAnalytics: "/students/analytics",
 };
 export default endpoints;

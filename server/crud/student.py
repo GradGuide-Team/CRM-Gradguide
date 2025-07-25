@@ -1,6 +1,6 @@
 # server/crud/student.py
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from server.db.models import Student, User, UniversityChoice, SchoolMarksheet, DocumentsRequired, VisaDocuments, ApplicationStatusLog, OverviewNote, UniversityNote, UniversityDetails, UniversityMarksheet
 from server.schemas.student import (
     StudentCreate, StudentPublic, StudentUpdate, UniversityNoteCreate, 
@@ -467,3 +467,169 @@ async def delete_student(
     
     student.delete()
     return True
+
+
+async def get_student_analytics(
+    current_user_id: str,
+    current_user_role: str
+) -> Dict[str, Any]:
+    """
+    Get comprehensive analytics data for funnel views including:
+    - Application path distribution (Direct, SI, Eduwise)
+    - Student stage distribution
+    - Document completion rates
+    - Visa status distribution
+    - University application status counts
+    """
+
+    # Base query with role-based filtering
+    print(f"Starting analytics for user {current_user_id} with role {current_user_role}")
+    query_set = Student.objects
+    if current_user_role == "member":
+        query_set = query_set.filter(created_by=ObjectId(current_user_id))
+
+    students = list(query_set)
+    total_students = len(students)
+    print(f"Found {total_students} students for analytics")
+
+    if total_students == 0:
+        return {
+            "total_students": 0,
+            "application_path_funnel": {},
+            "overall_stage_funnel": {},
+            "document_completion_funnel": {},
+            "university_application_funnel": {},
+            "visa_process_funnel": {},
+            "country_distribution": {},
+            "counselor_distribution": {}
+        }
+
+    # 1. Application Path Distribution
+    application_paths = {}
+    for student in students:
+        path = student.application_path or "Unknown"
+        application_paths[path] = application_paths.get(path, 0) + 1
+
+    # 2. Overall Stage Distribution (based on primary indicators)
+    stage_distribution = {
+        "Document Collection": 0,
+        "Application Phase": 0,
+        "Offer Received": 0,
+        "Visa Phase": 0,
+        "Finalized": 0
+    }
+
+    # 3. Document Completion Rates
+    document_stats = {
+        "passport": 0,
+        "marksheets": 0,
+        "english_exam": 0,
+        "sop": 0,
+        "lor": 0,
+        "resume": 0
+    }
+
+    # 4. University Application Status Distribution
+    university_status_counts = {}
+
+    # 5. Visa Status Distribution
+    visa_status_counts = {
+        "Pending": 0,
+        "Accepted": 0,
+        "Rejected": 0
+    }
+
+    visa_process_stats = {
+        "counselling_started": 0,
+        "documents_received": 0,
+        "application_filled": 0,
+        "interview_scheduled": 0
+    }
+
+    # 6. Country and Counselor Distribution
+    country_distribution = {}
+    counselor_distribution = {}
+
+    # Process each student
+    for student in students:
+        # Country distribution
+        country = student.target_country or "Unknown"
+        country_distribution[country] = country_distribution.get(country, 0) + 1
+
+        # Counselor distribution
+        counselor_name = "Unassigned"
+        if student.assigned_counselor:
+            counselor_name = getattr(student.assigned_counselor, 'name', 'Unknown')
+        counselor_distribution[counselor_name] = counselor_distribution.get(counselor_name, 0) + 1
+
+        # Document completion
+        if hasattr(student, 'documents') and student.documents:
+            for doc_type in document_stats.keys():
+                if getattr(student.documents, doc_type, False):
+                    document_stats[doc_type] += 1
+
+        # Visa status
+        if hasattr(student, 'visa_documents') and student.visa_documents:
+            visa_decision = getattr(student.visa_documents, 'decision', 'Pending')
+            visa_status_counts[visa_decision] = visa_status_counts.get(visa_decision, 0) + 1
+
+            # Visa process steps
+            for step in visa_process_stats.keys():
+                if getattr(student.visa_documents, step, False):
+                    visa_process_stats[step] += 1
+        else:
+            visa_status_counts["Pending"] += 1
+
+        # University application statuses and overall stage determination
+        student_university_statuses = []
+        has_offer = False
+        has_finalized = False
+
+        for choice in student.university_choices:
+            status = choice.application_status
+            student_university_statuses.append(status)
+
+            # Count university statuses
+            university_status_counts[status] = university_status_counts.get(status, 0) + 1
+
+            # Check for offers and finalized
+            if status in ["conditional offer received", "unconditional offer received"]:
+                has_offer = True
+            elif status == "Uni finalized":
+                has_finalized = True
+
+        # Determine overall student stage
+        if has_finalized:
+            stage_distribution["Finalized"] += 1
+        elif getattr(student.visa_documents, 'counselling_started', False) if hasattr(student, 'visa_documents') and student.visa_documents else False:
+            stage_distribution["Visa Phase"] += 1
+        elif has_offer:
+            stage_distribution["Offer Received"] += 1
+        elif any(status in ["application pending", "application filed"] for status in student_university_statuses):
+            stage_distribution["Application Phase"] += 1
+        else:
+            stage_distribution["Document Collection"] += 1
+
+    # Calculate percentages for funnel views
+    def calculate_percentages(data_dict, total):
+        return {
+            key: {
+                "count": count,
+                "percentage": round((count / total) * 100, 1) if total > 0 else 0
+            }
+            for key, count in data_dict.items()
+        }
+
+    return {
+        "total_students": total_students,
+        "application_path_funnel": calculate_percentages(application_paths, total_students),
+        "overall_stage_funnel": calculate_percentages(stage_distribution, total_students),
+        "document_completion_funnel": calculate_percentages(document_stats, total_students),
+        "university_application_funnel": calculate_percentages(university_status_counts, sum(university_status_counts.values())),
+        "visa_process_funnel": {
+            "status_distribution": calculate_percentages(visa_status_counts, total_students),
+            "process_steps": calculate_percentages(visa_process_stats, total_students)
+        },
+        "country_distribution": calculate_percentages(country_distribution, total_students),
+        "counselor_distribution": calculate_percentages(counselor_distribution, total_students)
+    }

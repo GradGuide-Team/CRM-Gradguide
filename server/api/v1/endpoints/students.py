@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from server.schemas.student import (
-    StudentCreate, StudentPublic, StudentUpdate, 
+    StudentCreate, StudentPublic, StudentUpdate,
     ApplicationStatusUpdateRequest, UniversityNoteCreate, OverviewNoteCreate
 )
 from server.crud import student as crud_student
@@ -70,6 +70,35 @@ async def read_student_endpoint(
         populate_creator=populate_creator
     )
     return students
+
+@router.get("/students/analytics", response_model=Dict[str, Any])
+async def get_student_analytics_endpoint(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get comprehensive analytics data for funnel views including:
+    - Application path distribution (Direct, SI, Eduwise)
+    - Student stage distribution
+    - Document completion rates
+    - Visa status distribution
+    - University application status counts
+    """
+    try:
+        print(f"Fetching analytics for user: {current_user['id']}, role: {current_user['role']}")
+        analytics_data = await crud_student.get_student_analytics(
+            current_user_id=current_user["id"],
+            current_user_role=current_user["role"]
+        )
+        print(f"Analytics data fetched successfully: {len(str(analytics_data))} characters")
+        return analytics_data
+    except Exception as e:
+        print(f"Error fetching analytics: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch analytics: {e}"
+        )
 
 @router.get("/students/{student_id}", response_model=StudentPublic)
 async def read_student_by_id_endpoint(
@@ -227,6 +256,6 @@ async def delete_student_endpoint(
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete student: {e}"
         )
