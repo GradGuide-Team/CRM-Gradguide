@@ -1,4 +1,4 @@
-# Funnel Analytics Dashboard Documentation
+c# Funnel Analytics Dashboard Documentation
 
 ## Overview
 This document provides comprehensive documentation for the Funnel Analytics Dashboard implementation in the GradGuide CRM system. The dashboard provides real-time insights into student application stages, document completion rates, visa processing, and distribution analytics.
