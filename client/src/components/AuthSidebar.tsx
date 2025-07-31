@@ -15,7 +15,8 @@ import {
     IconUser,
     IconLogout,
     IconDashboard,
-    IconBook2 // Added for Students
+    IconBook2, // Added for Students
+    IconChartBar // Added for Analytics
 } from "@tabler/icons-react";
 // import Image from "next/image";
 import { motion } from "framer-motion"; // Remove animate from import
@@ -47,6 +48,11 @@ const SidebarContent = ({ user, pathname, router }: {
             label: "Dashboard",
             href: "/",
             icon: <IconDashboard className="text-white h-5 w-5 shrink-0" />,
+        },
+        {
+            label: "Analytics",
+            href: "/analytics",
+            icon: <IconChartBar className="text-white h-5 w-5 shrink-0" />,
         },
         // {
         //     label: "Students",
