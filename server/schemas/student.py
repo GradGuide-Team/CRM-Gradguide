@@ -141,11 +141,25 @@ class SchoolMarksheet(BaseModel):
     xii_maths: Optional[str] = None
     xii_stream: str = Field(...)
 
+class SemesterResult(BaseModel):
+    semester: Optional[str] = None
+    year: Optional[str] = None
+    cgpa: Optional[str] = None
+    grade: Optional[str] = None
+    kt: Optional[str] = None
+
 class UniversityDetails(BaseModel):
     college_name: Optional[str] = None
     branch_name: Optional[str] = None
-    fromYear: Optional[str] = None
-    toYear: Optional[str] = None
+    stream: Optional[str] = None
+    university_name: Optional[str] = None
+    degree_earned: Optional[str] = None
+    start_year: Optional[str] = None
+    end_year: Optional[str] = None
+    semesters: Optional[List[SemesterResult]] = None
+    overall_cgpa: Optional[str] = None
+    final_grade: Optional[str] = None
+    total_kt: Optional[str] = None
 
 class UniversityMarksheet(BaseModel):
     semester: Optional[str] = None
