@@ -315,6 +315,35 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
         if (!formData.school_marksheet.xii_english) currentFieldErrors.school_marksheet_xii_english = "Class 12 English marks are required.";
         if (!formData.school_marksheet?.xii_stream) currentFieldErrors.school_marksheet_xii_stream = "Class 12 stream is required.";
 
+        // Validate basic information
+        if (!formData.full_name) currentFieldErrors.full_name = "Full name is required.";
+        if (!formData.email_address) currentFieldErrors.email_address = "Email address is required.";
+        if (!formData.phone_number) currentFieldErrors.phone_number = "Phone number is required.";
+        if (!formData.target_country) currentFieldErrors.target_country = "Target country is required.";
+        if (!formData.dob) currentFieldErrors.dob = "Date of birth is required.";
+
+        // Validate parents contact information
+        if (!formData.parents_contact) currentFieldErrors.parents_contact = "Parents contact is required.";
+
+        // Validate college details (only for Masters degree)
+        if (formData.degree_type === 'Masters') {
+            if (!formData.college_details?.college_name) currentFieldErrors.college_name = "College name is required.";
+            if (!formData.college_details?.university_name) currentFieldErrors.university_name = "University name is required.";
+            if (!formData.college_details?.branch_name) currentFieldErrors.branch_name = "Branch/Department is required.";
+            if (!formData.college_details?.stream) currentFieldErrors.stream = "Stream is required.";
+            if (!formData.college_details?.degree_earned) currentFieldErrors.degree_earned = "Degree earned is required.";
+            if (!formData.college_details?.start_year) currentFieldErrors.start_year = "Start year is required.";
+            if (!formData.college_details?.end_year) currentFieldErrors.end_year = "End year is required.";
+            if (!formData.college_details?.overall_cgpa) currentFieldErrors.overall_cgpa = "Overall CGPA is required.";
+        }
+
+        // Validate university choices
+        formData.university_choices.forEach((choice, index) => {
+            if (!choice.university_name) currentFieldErrors[`university_name-${index}`] = "University name is required.";
+            if (!choice.course_name) currentFieldErrors[`course_name-${index}`] = "Course name is required.";
+            if (!choice.intake_month) currentFieldErrors[`intake_month-${index}`] = "Intake month is required.";
+        });
+
         setFieldErrors(currentFieldErrors);
 
         if (Object.keys(currentFieldErrors).length > 0) {
@@ -592,6 +621,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                         }`}
 
                                 >
+                                    <option value="">Country</option>
                                     <option value="Australia">Australia</option>
                                     <option value="Canada">Canada</option>
                                     <option value="United Kingdom">United Kingdom</option>
@@ -682,14 +712,23 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="parents_contact" className="text-sm font-medium">Parents Contact</Label>
+                                <Label htmlFor="parents_contact" className="text-sm font-medium">Parents Contact *</Label>
                                 <Input
                                     id="parents_contact"
                                     value={formData.parents_contact}
                                     onChange={handleParentsContactChange}
                                     placeholder="+1234567890"
-                                    className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.parents_contact
+                                        ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                        }`}
                                 />
+                                {fieldErrors.parents_contact && (
+                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                        <AlertCircle className="h-3 w-3" />
+                                        {fieldErrors.parents_contact}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -905,8 +944,17 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             value={formData.college_details?.college_name || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="Enter college name"
-                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.college_name
+                                                ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                                }`}
                                         />
+                                        {fieldErrors.college_name && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.college_name}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
@@ -917,8 +965,17 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             value={formData.college_details?.university_name || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="Enter university name"
-                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.university_name
+                                                ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                                }`}
                                         />
+                                        {fieldErrors.university_name && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.university_name}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
@@ -929,8 +986,17 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             value={formData.college_details?.branch_name || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="e.g., Computer Science"
-                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.branch_name
+                                                ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                                }`}
                                         />
+                                        {fieldErrors.branch_name && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.branch_name}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
@@ -941,8 +1007,17 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             value={formData.college_details?.stream || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="e.g., Engineering, Commerce, Arts"
-                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.stream
+                                                ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                                }`}
                                         />
+                                        {fieldErrors.stream && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.stream}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
@@ -952,8 +1027,12 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             name="degree_earned"
                                             value={formData.college_details?.degree_earned || ''}
                                             onChange={handleCollegeDetailsChange}
-                                            className="w-full px-3 py-2 border rounded-md transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                            className={`w-full px-3 py-2 border rounded-md transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.degree_earned
+                                                ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                                }`}
                                         >
+                                            <option value="">Select Degree</option>
                                             <option value="B.Tech">B.Tech</option>
                                             <option value="B.E.">B.E.</option>
                                             <option value="B.Sc.">B.Sc.</option>
@@ -963,6 +1042,12 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             <option value="BCA">BCA</option>
                                             <option value="Other">Other</option>
                                         </select>
+                                        {fieldErrors.degree_earned && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.degree_earned}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
@@ -976,8 +1061,17 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             placeholder="e.g., 2020"
                                             min="1900"
                                             max={new Date().getFullYear()}
-                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.start_year
+                                                ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                                }`}
                                         />
+                                        {fieldErrors.start_year && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.start_year}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
@@ -991,8 +1085,17 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             placeholder="e.g., 2024"
                                             min="1900"
                                             max={new Date().getFullYear() + 5}
-                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.end_year
+                                                ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                                }`}
                                         />
+                                        {fieldErrors.end_year && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.end_year}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
@@ -1007,8 +1110,17 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             step="0.01"
                                             min="0"
                                             max="10"
-                                            className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                            className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.overall_cgpa
+                                                ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
+                                                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                                                }`}
                                         />
+                                        {fieldErrors.overall_cgpa && (
+                                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1 animate-in fade-in-0 slide-in-from-left-1 duration-200">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {fieldErrors.overall_cgpa}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
