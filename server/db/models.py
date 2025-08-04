@@ -133,11 +133,25 @@ class UniversityMarksheet(EmbeddedDocument):
     backlog = IntField()
     year = StringField()
     
+class SemesterResult(EmbeddedDocument):
+    semester = StringField()
+    year = StringField()
+    cgpa = StringField()
+    grade = StringField()
+    kt = StringField()
+
 class UniversityDetails(EmbeddedDocument):
     college_name = StringField()
     branch_name = StringField()
-    fromYear = StringField()
-    toYear = StringField()
+    stream = StringField()
+    university_name = StringField()
+    degree_earned = StringField()
+    start_year = StringField()
+    end_year = StringField()
+    semesters = ListField(EmbeddedDocumentField(SemesterResult))
+    overall_cgpa = StringField()
+    final_grade = StringField()
+    total_kt = StringField()
     
 class Student(Document):
     full_name = StringField(required = True)

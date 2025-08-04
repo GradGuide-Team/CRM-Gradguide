@@ -56,7 +56,7 @@ interface SemesterResult {
     kt: string;
 }
 
-interface CollegeDetails {
+interface UniversityDetails {
     college_name: string;
     branch_name: string;
     stream: string;
@@ -82,7 +82,7 @@ interface NewStudentData {
     dob: string;
     university_choices: UniversityChoicePayload[];
     school_marksheet: SchoolMarksheet;
-    college_details?: CollegeDetails;
+    university_details?: UniversityDetails;
     parents_contact: string;
     parents_email: string;
     documents?: {
@@ -152,7 +152,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
             xii_maths: '',
             xii_stream: ''
         },
-        college_details: {
+        university_details: {
             college_name: '',
             branch_name: '',
             stream: '',
@@ -263,8 +263,8 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
     const handleCollegeDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData(prev => ({
             ...prev,
-            college_details: {
-                ...prev.college_details!,
+            university_details: {
+                ...prev.university_details!,
                 [e.target.name]: e.target.value
             }
         }));
@@ -273,7 +273,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
     const handleSemesterChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => {
-            const updatedSemesters = [...prev.college_details!.semesters];
+            const updatedSemesters = [...prev.university_details!.semesters];
             updatedSemesters[index] = {
                 ...updatedSemesters[index],
                 [name]: value
@@ -287,8 +287,8 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
 
             return {
                 ...prev,
-                college_details: {
-                    ...prev.college_details!,
+                university_details: {
+                    ...prev.university_details!,
                     semesters: updatedSemesters,
                     total_kt: totalKT.toString(),
                     overall_cgpa: avgCGPA
@@ -327,14 +327,14 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
 
         // Validate college details (only for Masters degree)
         if (formData.degree_type === 'Masters') {
-            if (!formData.college_details?.college_name) currentFieldErrors.college_name = "College name is required.";
-            if (!formData.college_details?.university_name) currentFieldErrors.university_name = "University name is required.";
-            if (!formData.college_details?.branch_name) currentFieldErrors.branch_name = "Branch/Department is required.";
-            if (!formData.college_details?.stream) currentFieldErrors.stream = "Stream is required.";
-            if (!formData.college_details?.degree_earned) currentFieldErrors.degree_earned = "Degree earned is required.";
-            if (!formData.college_details?.start_year) currentFieldErrors.start_year = "Start year is required.";
-            if (!formData.college_details?.end_year) currentFieldErrors.end_year = "End year is required.";
-            if (!formData.college_details?.overall_cgpa) currentFieldErrors.overall_cgpa = "Overall CGPA is required.";
+            if (!formData.university_details?.college_name) currentFieldErrors.college_name = "College name is required.";
+            if (!formData.university_details?.university_name) currentFieldErrors.university_name = "University name is required.";
+            if (!formData.university_details?.branch_name) currentFieldErrors.branch_name = "Branch/Department is required.";
+            if (!formData.university_details?.stream) currentFieldErrors.stream = "Stream is required.";
+            if (!formData.university_details?.degree_earned) currentFieldErrors.degree_earned = "Degree earned is required.";
+            if (!formData.university_details?.start_year) currentFieldErrors.start_year = "Start year is required.";
+            if (!formData.university_details?.end_year) currentFieldErrors.end_year = "End year is required.";
+            if (!formData.university_details?.overall_cgpa) currentFieldErrors.overall_cgpa = "Overall CGPA is required.";
         }
 
         // Validate university choices
@@ -941,7 +941,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                         <Input
                                             id="college_name"
                                             name="college_name"
-                                            value={formData.college_details?.college_name || ''}
+                                            value={formData.university_details?.college_name || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="Enter college name"
                                             className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.college_name
@@ -962,7 +962,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                         <Input
                                             id="university_name"
                                             name="university_name"
-                                            value={formData.college_details?.university_name || ''}
+                                            value={formData.university_details?.university_name || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="Enter university name"
                                             className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.university_name
@@ -983,7 +983,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                         <Input
                                             id="branch_name"
                                             name="branch_name"
-                                            value={formData.college_details?.branch_name || ''}
+                                            value={formData.university_details?.branch_name || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="e.g., Computer Science"
                                             className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.branch_name
@@ -1004,7 +1004,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                         <Input
                                             id="stream"
                                             name="stream"
-                                            value={formData.college_details?.stream || ''}
+                                            value={formData.university_details?.stream || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="e.g., Engineering, Commerce, Arts"
                                             className={`transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.stream
@@ -1025,7 +1025,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                         <select
                                             id="degree_earned"
                                             name="degree_earned"
-                                            value={formData.college_details?.degree_earned || ''}
+                                            value={formData.university_details?.degree_earned || ''}
                                             onChange={handleCollegeDetailsChange}
                                             className={`w-full px-3 py-2 border rounded-md transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white ${fieldErrors.degree_earned
                                                 ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800/50 shake-animation'
@@ -1056,7 +1056,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             type="number"
                                             id="start_year"
                                             name="start_year"
-                                            value={formData.college_details?.start_year || ''}
+                                            value={formData.university_details?.start_year || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="e.g., 2020"
                                             min="1900"
@@ -1080,7 +1080,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             type="number"
                                             id="end_year"
                                             name="end_year"
-                                            value={formData.college_details?.end_year || ''}
+                                            value={formData.university_details?.end_year || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="e.g., 2024"
                                             min="1900"
@@ -1104,7 +1104,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             type="number"
                                             id="overall_cgpa"
                                             name="overall_cgpa"
-                                            value={formData.college_details?.overall_cgpa || ''}
+                                            value={formData.university_details?.overall_cgpa || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="e.g., 8.5"
                                             step="0.01"
@@ -1128,7 +1128,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                         <Input
                                             id="final_grade"
                                             name="final_grade"
-                                            value={formData.college_details?.final_grade || ''}
+                                            value={formData.university_details?.final_grade || ''}
                                             onChange={handleCollegeDetailsChange}
                                             placeholder="e.g., A, B+, etc."
                                             className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
@@ -1141,7 +1141,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                             type="number"
                                             id="total_kt"
                                             name="total_kt"
-                                            value={formData.college_details?.total_kt || '0'}
+                                            value={formData.university_details?.total_kt || '0'}
                                             onChange={handleCollegeDetailsChange}
                                             min="0"
                                             className="transition-all duration-200 ease-in-out focus:scale-[1.01] bg-neutral-50 dark:bg-neutral-800 dark:text-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
@@ -1164,7 +1164,7 @@ export function AddStudentDialog({ isOpen, onOpenChange, onStudentAdded }: AddSt
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
-                                                {formData.college_details?.semesters?.map((semester, index) => (
+                                                {formData.university_details?.semesters?.map((semester, index) => (
                                                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-neutral-700/50">
                                                         <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                                             {semester.semester}

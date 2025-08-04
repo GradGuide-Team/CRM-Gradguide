@@ -49,6 +49,7 @@ const student = () => {
         const response = await axiosInstance.get(`${endpoints.getStudentById}/${studentId}`)
         if (response.status === 200) {
           const rawData = response.data;
+          
 
           const processedStudent: StudentDetail = {
             ...rawData,
@@ -95,7 +96,9 @@ const student = () => {
         application_path: editedStudent.application_path,
         visa_documents: editedStudent.visa_documents,
         university_choices: editedStudent.university_choices,
-        documents: editedStudent.documents
+        documents: editedStudent.documents,
+        school_marksheet: editedStudent.school_marksheet,
+        university_details: editedStudent.university_details
       };
 
       const response = await axiosInstance.patch(`${endpoints.updateStudent}/${studentId}`, updateData);
@@ -128,6 +131,58 @@ const student = () => {
       ...prev!,
       [field]: value
     }));
+  };
+
+  const handleSchoolMarksheetChange = (field: string, value: string) => {
+    if (!editedStudent) return;
+
+    setEditedStudent(prev => ({
+      ...prev!,
+      school_marksheet: {
+        ...prev!.school_marksheet!,
+        [field]: value
+      }
+    }));
+  };
+
+  const handleUniversityDetailsChange = (field: string, value: string) => {
+    if (!editedStudent) return;
+
+    setEditedStudent(prev => ({
+      ...prev!,
+      university_details: {
+        ...prev!.university_details!,
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSemesterChange = (index: number, field: string, value: string) => {
+    if (!editedStudent || !editedStudent.university_details?.semesters) return;
+
+    setEditedStudent(prev => {
+      const updatedSemesters = [...prev!.university_details!.semesters!];
+      updatedSemesters[index] = {
+        ...updatedSemesters[index],
+        [field]: value
+      };
+
+      // Calculate overall CGPA and total KT
+      const validSemesters = updatedSemesters.filter(sem => sem.cgpa && !isNaN(parseFloat(sem.cgpa)));
+      const totalCGPA = validSemesters.reduce((sum, sem) => sum + parseFloat(sem.cgpa), 0);
+      const avgCGPA = validSemesters.length > 0 ? (totalCGPA / validSemesters.length).toFixed(2) : '';
+      const totalKT = updatedSemesters.reduce((sum, sem) => sum + (parseInt(sem.kt || '0') || 0), 0);
+
+      return {
+        ...prev!,
+        university_details: {
+          ...prev!.university_details!,
+          semesters: updatedSemesters,
+          overall_cgpa: avgCGPA,
+          total_kt: totalKT.toString()
+        }
+      };
+    });
   };
 
   const handleDocumentChange = (docType: string, value: boolean) => {
@@ -297,7 +352,10 @@ const student = () => {
     </div>
   );
 
-  const renderOverview = () => (
+  const renderOverview = () => {
+    if (!currentStudent) return null;
+    
+    return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-gray-50 rounded-lg p-6">
@@ -465,8 +523,396 @@ const student = () => {
           </div>
         </div>
       </div>
+
+
+
+      {/* Education Details Section */}
+      {currentStudent.school_marksheet && (
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <BookOpen className="mr-2 h-5 w-5" />
+            Education Details
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Class 10 Details */}
+            <div className="space-y-3">
+              <h4 className="text-md font-semibold text-gray-700 mb-3">Class 10 Details</h4>
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-24">Year:</span>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      value={editedStudent?.school_marksheet?.x_year || ''}
+                      onChange={(e) => handleSchoolMarksheetChange('x_year', e.target.value)}
+                      className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    />
+                  ) : (
+                    <span className="ml-2 text-gray-900">{currentStudent.school_marksheet.x_year || 'N/A'}</span>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-24">School Name:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedStudent?.school_marksheet?.x_school_name || ''}
+                      onChange={(e) => handleSchoolMarksheetChange('x_school_name', e.target.value)}
+                      className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    />
+                  ) : (
+                    <span className="ml-2 text-gray-900">{currentStudent.school_marksheet.x_school_name || 'N/A'}</span>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-24">CGPA:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedStudent?.school_marksheet?.x_cgpa || ''}
+                      onChange={(e) => handleSchoolMarksheetChange('x_cgpa', e.target.value)}
+                      className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    />
+                  ) : (
+                    <span className="ml-2 text-gray-900">{currentStudent.school_marksheet.x_cgpa || 'N/A'}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Class 12 Details */}
+            <div className="space-y-3">
+              <h4 className="text-md font-semibold text-gray-700 mb-3">Class 12 Details</h4>
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-24">Year:</span>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      value={editedStudent?.school_marksheet?.xii_year || ''}
+                      onChange={(e) => handleSchoolMarksheetChange('xii_year', e.target.value)}
+                      className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    />
+                  ) : (
+                    <span className="ml-2 text-gray-900">{currentStudent.school_marksheet.xii_year || 'N/A'}</span>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-24">School Name:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedStudent?.school_marksheet?.xii_school_name || ''}
+                      onChange={(e) => handleSchoolMarksheetChange('xii_school_name', e.target.value)}
+                      className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    />
+                  ) : (
+                    <span className="ml-2 text-gray-900">{currentStudent.school_marksheet.xii_school_name || 'N/A'}</span>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-24">CGPA:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedStudent?.school_marksheet?.xii_cgpa || ''}
+                      onChange={(e) => handleSchoolMarksheetChange('xii_cgpa', e.target.value)}
+                      className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    />
+                  ) : (
+                    <span className="ml-2 text-gray-900">{currentStudent.school_marksheet.xii_cgpa || 'N/A'}</span>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-24">English Marks:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedStudent?.school_marksheet?.xii_english || ''}
+                      onChange={(e) => handleSchoolMarksheetChange('xii_english', e.target.value)}
+                      className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    />
+                  ) : (
+                    <span className="ml-2 text-gray-900">{currentStudent.school_marksheet.xii_english || 'N/A'}</span>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-24">Maths Marks:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedStudent?.school_marksheet?.xii_maths || ''}
+                      onChange={(e) => handleSchoolMarksheetChange('xii_maths', e.target.value)}
+                      className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    />
+                  ) : (
+                    <span className="ml-2 text-gray-900">{currentStudent.school_marksheet.xii_maths || 'N/A'}</span>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-24">Stream:</span>
+                  {isEditing ? (
+                    <select
+                      value={editedStudent?.school_marksheet?.xii_stream || ''}
+                      onChange={(e) => handleSchoolMarksheetChange('xii_stream', e.target.value)}
+                      className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    >
+                      <option value="">Select Stream</option>
+                      <option value="Science">Science</option>
+                      <option value="Commerce">Commerce</option>
+                      <option value="Arts">Arts</option>
+                    </select>
+                  ) : (
+                    <span className="ml-2 text-gray-900">{currentStudent.school_marksheet.xii_stream || 'N/A'}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* College Details Section - Only show for Masters */}
+      {currentStudent.degree_type === 'Masters' && currentStudent.university_details && (
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <CreditCard className="mr-2 h-5 w-5" />
+            College Details
+          </h3>
+          
+          {/* Basic College Information */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <span className="text-gray-600 w-32">College Name:</span>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedStudent?.university_details?.college_name || ''}
+                    onChange={(e) => handleUniversityDetailsChange('college_name', e.target.value)}
+                    className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                  />
+                ) : (
+                  <span className="ml-2 text-gray-900">{currentStudent.university_details.college_name || 'N/A'}</span>
+                )}
+              </div>
+              <div className="flex items-center">
+                <span className="text-gray-600 w-32">University Name:</span>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedStudent?.university_details?.university_name || ''}
+                    onChange={(e) => handleUniversityDetailsChange('university_name', e.target.value)}
+                    className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                  />
+                ) : (
+                  <span className="ml-2 text-gray-900">{currentStudent.university_details.university_name || 'N/A'}</span>
+                )}
+              </div>
+              <div className="flex items-center">
+                <span className="text-gray-600 w-32">Branch/Department:</span>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedStudent?.university_details?.branch_name || ''}
+                    onChange={(e) => handleUniversityDetailsChange('branch_name', e.target.value)}
+                    className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                  />
+                ) : (
+                  <span className="ml-2 text-gray-900">{currentStudent.university_details.branch_name || 'N/A'}</span>
+                )}
+              </div>
+              <div className="flex items-center">
+                <span className="text-gray-600 w-32">Stream:</span>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedStudent?.university_details?.stream || ''}
+                    onChange={(e) => handleUniversityDetailsChange('stream', e.target.value)}
+                    className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                  />
+                ) : (
+                  <span className="ml-2 text-gray-900">{currentStudent.university_details.stream || 'N/A'}</span>
+                )}
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <span className="text-gray-600 w-32">Degree Earned:</span>
+                {isEditing ? (
+                  <select
+                    value={editedStudent?.university_details?.degree_earned || ''}
+                    onChange={(e) => handleUniversityDetailsChange('degree_earned', e.target.value)}
+                    className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                  >
+                    <option value="">Select Degree</option>
+                    <option value="B.Tech">B.Tech</option>
+                    <option value="B.E.">B.E.</option>
+                    <option value="B.Sc.">B.Sc.</option>
+                    <option value="B.Com">B.Com</option>
+                    <option value="BA">BA</option>
+                    <option value="BBA">BBA</option>
+                    <option value="BCA">BCA</option>
+                    <option value="Other">Other</option>
+                  </select>
+                ) : (
+                  <span className="ml-2 text-gray-900">{currentStudent.university_details.degree_earned || 'N/A'}</span>
+                )}
+              </div>
+              <div className="flex items-center">
+                <span className="text-gray-600 w-32">Start Year:</span>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={editedStudent?.university_details?.start_year || ''}
+                    onChange={(e) => handleUniversityDetailsChange('start_year', e.target.value)}
+                    className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    min="1900"
+                    max={new Date().getFullYear()}
+                  />
+                ) : (
+                  <span className="ml-2 text-gray-900">{currentStudent.university_details.start_year || 'N/A'}</span>
+                )}
+              </div>
+              <div className="flex items-center">
+                <span className="text-gray-600 w-32">End Year:</span>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={editedStudent?.university_details?.end_year || ''}
+                    onChange={(e) => handleUniversityDetailsChange('end_year', e.target.value)}
+                    className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    min="1900"
+                    max={new Date().getFullYear() + 5}
+                  />
+                ) : (
+                  <span className="ml-2 text-gray-900">{currentStudent.university_details.end_year || 'N/A'}</span>
+                )}
+              </div>
+              <div className="flex items-center">
+                <span className="text-gray-600 w-32">Final Grade:</span>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedStudent?.university_details?.final_grade || ''}
+                    onChange={(e) => handleUniversityDetailsChange('final_grade', e.target.value)}
+                    className="ml-2 px-2 py-1 border rounded text-gray-900 flex-1"
+                    placeholder="e.g., A, B+, etc."
+                  />
+                ) : (
+                  <span className="ml-2 text-gray-900">{currentStudent.university_details.final_grade || 'N/A'}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Academic Performance Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-lg p-4 border">
+              <div className="text-sm text-gray-600">Overall CGPA</div>
+              <div className="text-2xl font-bold text-blue-600">{currentStudent.university_details.overall_cgpa || 'N/A'}</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border">
+              <div className="text-sm text-gray-600">Total KT (Backlogs)</div>
+              <div className="text-2xl font-bold text-red-600">{currentStudent.university_details.total_kt || '0'}</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border">
+              <div className="text-sm text-gray-600">Final Grade</div>
+              <div className="text-2xl font-bold text-green-600">{currentStudent.university_details.final_grade || 'N/A'}</div>
+            </div>
+          </div>
+
+          {/* Semester-wise Results */}
+          {currentStudent.university_details.semesters && currentStudent.university_details.semesters.length > 0 && (
+            <div>
+              <h4 className="text-md font-semibold text-gray-700 mb-3">Semester-wise Results</h4>
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Semester</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Year</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">CGPA</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Grade</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">KT</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentStudent.university_details.semesters.map((semester, index) => (
+                      <tr key={index} className="border-t border-gray-200">
+                        <td className="px-4 py-2 text-sm text-gray-900">{semester.semester || 'N/A'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editedStudent?.university_details?.semesters?.[index]?.year || ''}
+                              onChange={(e) => handleSemesterChange(index, 'year', e.target.value)}
+                              className="w-full px-2 py-1 border rounded text-sm"
+                              placeholder="Year"
+                            />
+                          ) : (
+                            semester.year || 'N/A'
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-900">
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="10"
+                              value={editedStudent?.university_details?.semesters?.[index]?.cgpa || ''}
+                              onChange={(e) => handleSemesterChange(index, 'cgpa', e.target.value)}
+                              className="w-full px-2 py-1 border rounded text-sm"
+                              placeholder="CGPA"
+                            />
+                          ) : (
+                            <span className={`font-medium ${semester.cgpa && parseFloat(semester.cgpa) >= 7 ? 'text-green-600' : semester.cgpa && parseFloat(semester.cgpa) >= 6 ? 'text-yellow-600' : 'text-red-600'}`}>
+                              {semester.cgpa || 'N/A'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-900">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editedStudent?.university_details?.semesters?.[index]?.grade || ''}
+                              onChange={(e) => handleSemesterChange(index, 'grade', e.target.value)}
+                              className="w-full px-2 py-1 border rounded text-sm"
+                              placeholder="Grade"
+                            />
+                          ) : (
+                            semester.grade || 'N/A'
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-sm">
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              min="0"
+                              value={editedStudent?.university_details?.semesters?.[index]?.kt || ''}
+                              onChange={(e) => handleSemesterChange(index, 'kt', e.target.value)}
+                              className="w-full px-2 py-1 border rounded text-sm"
+                              placeholder="KT"
+                            />
+                          ) : (
+                            <span className={`font-medium ${semester.kt && parseInt(semester.kt) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {semester.kt || '0'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
+  };
 
   const renderCoursesAndApplications = () => (
     <div className="space-y-6">

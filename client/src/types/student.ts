@@ -68,6 +68,41 @@ export interface VisaDocuments {
   application_filled: boolean;
   interview_scheduled: boolean;
 }
+
+export interface SchoolMarksheet {
+  x_year: string;
+  x_school_name: string;
+  x_cgpa: string;
+  xii_year: string;
+  xii_school_name: string;
+  xii_cgpa: string;
+  xii_english: string;
+  xii_maths?: string;
+  xii_stream: string;
+}
+
+export interface UniversityDetails {
+  college_name: string;
+  branch_name: string;
+  stream: string;
+  university_name: string;
+  degree_earned: string;
+  start_year: string;
+  end_year: string;
+  semesters: SemesterResult[];
+  overall_cgpa: string;
+  final_grade: string;
+  total_kt: string;
+}
+
+export interface SemesterResult {
+  semester: string;
+  year: string;
+  cgpa: string;
+  grade: string;
+  kt: string;
+}
+
 export interface StudentDetail {
   _id: string;
   full_name: string;
@@ -76,11 +111,15 @@ export interface StudentDetail {
   target_country: string;
   degree_type: string | null;
   dob: Date | null;
+  parents_contact?: string;
+  parents_email?: string;
   assigned_counselor: AssignedCounselor;
   assigned_counselor_id: string | null;
   created_by: CreatedBy;
   created_by_id: string | null;
   application_path: "Direct" | "SI" | "Eduwise";
+  school_marksheet?: SchoolMarksheet;
+  university_details?: UniversityDetails;
   documents: Documents;
   university_choices: UniversityChoice[];
   visa_documents: VisaDocuments;
