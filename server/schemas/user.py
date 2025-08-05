@@ -37,7 +37,8 @@ class UserCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=50)
     email: EmailStr
     password: str = Field(..., min_length=6)
-    role: Literal["admin", "member"] = "member"
+    role: Literal["admin", "counselor"] = "counselor"
+    
 
 # --- User Login ---
 class UserLogin(BaseModel):
@@ -55,7 +56,7 @@ class UserPublic(BaseModel):
     id: PyObjectId = Field(alias="_id")  # Map MongoDB's _id to 'id' for JSON
     name: str
     email: EmailStr
-    role: Literal["admin", "member"]
+    role: Literal["admin", "counselor"]
 # --- JWT Token Response ---
 class Token(BaseModel):
     access_token: str

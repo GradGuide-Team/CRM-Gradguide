@@ -74,7 +74,7 @@ axiosInstance.interceptors.response.use(
                 method: error.config?.method,
                 requestData: error.config?.data,
                 responseData: error.response.data,
-                validationDetails: error.response.data?.detail
+                // validationDetails: error.response.data?.detail
             });
         } else if (error.response) {
             const detail = (error.response.data && typeof error.response.data === 'object' && 'detail' in error.response.data)

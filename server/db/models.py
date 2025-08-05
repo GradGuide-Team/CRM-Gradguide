@@ -2,10 +2,13 @@
 from mongoengine import Document, StringField, EmbeddedDocument, ListField, EmbeddedDocumentField, ReferenceField, BooleanField, DateTimeField, IntField
 from datetime import datetime, timezone 
 class User(Document):
+    meta = {'collection': 'users'}
     name = StringField(required=True)
     email = StringField(required = True, unique=True)
-    hashed_password = StringField(required=True)
-    role = StringField(default = "member", choices = ["member", "admin"])
+    password  = StringField(required=True)
+    role = StringField(default = "counselor", choices = ["counselor", "admin"])
+    createdAt = DateTimeField(default=datetime.utcnow)
+    updatedAt = DateTimeField(default=datetime.utcnow)
 
 # Its job is to take the data from a User object (which comes from your MongoDB database)
 # and put it into a standard Python dictionary.
@@ -14,7 +17,9 @@ class User(Document):
             "id":str(self.id),
             "name": self.name,
             "email": self.email,
-            "role": self.role
+            "role": self.role,
+            "createdAt": self.createdAt,
+            "updatedAt": self.updatedAt
         }
     
 class ApplicationStatusLog(EmbeddedDocument):
@@ -146,8 +151,8 @@ class UniversityDetails(EmbeddedDocument):
     stream = StringField()
     university_name = StringField()
     degree_earned = StringField()
-    start_year = StringField()
-    end_year = StringField()
+    fromYear = StringField()
+    toYear = StringField()
     semesters = ListField(EmbeddedDocumentField(SemesterResult))
     overall_cgpa = StringField()
     final_grade = StringField()
@@ -177,7 +182,7 @@ class Student(Document):
     created_at = StringField(default=lambda: datetime.now(timezone.utc).isoformat()) 
     updated_at = StringField(default=lambda: datetime.now(timezone.utc).isoformat()) 
 
-    meta = {'collection': 'students'}
+    meta = {'collection': 'students-grad_guide'}
     # MongoEngine Document objects are powerful but not directly usable by FastAPI's Pydantic
     # schemas or for sending as JSON responses. Pydantic needs plain Python dictionaries (or objects it understands, 
     # like BaseModel instances).

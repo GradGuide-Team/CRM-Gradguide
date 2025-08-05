@@ -154,8 +154,8 @@ class UniversityDetails(BaseModel):
     stream: Optional[str] = None
     university_name: Optional[str] = None
     degree_earned: Optional[str] = None
-    start_year: Optional[str] = None
-    end_year: Optional[str] = None
+    fromYear: Optional[str] = None 
+    toYear: Optional[str] = None
     semesters: Optional[List[SemesterResult]] = None
     overall_cgpa: Optional[str] = None
     final_grade: Optional[str] = None
