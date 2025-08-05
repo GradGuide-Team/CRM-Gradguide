@@ -1,4 +1,6 @@
-'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// client/src/components/AnalyticsDashboard.tsx
+"use client";
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';

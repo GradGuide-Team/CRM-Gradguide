@@ -1,8 +1,10 @@
-'use client';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// client/src/app/demo/funnel-improvements/page.tsx
+"use client";
 import React from 'react';
 import { FunnelChart } from '@/components/FunnelChart';
 import { FunnelData } from '@/types/analytics';
+import { withAuth } from '@/wrapper/authWrapper';
 
 const demoData: FunnelData = {
   'Application Submitted': { count: 1250, percentage: 100 },
@@ -22,16 +24,16 @@ const smallSegmentData: FunnelData = {
 
 const colorSchemes = ['blue', 'green', 'purple', 'orange', 'red'] as const;
 
-export default function FunnelImprovementsDemo() {
+const FunnelImprovementsDemo = () => {
   const handleSegmentClick = (segment: string, data: any) => {
     console.log(`Clicked: ${segment}`, data);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className='bg-white min-h-screen w-full p-6'>
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <h1 className='text-2xl font-bold text-black mb-4'>
             Funnel Chart Demo
           </h1>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
@@ -58,7 +60,7 @@ export default function FunnelImprovementsDemo() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Color Schemes</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">Color Schemes</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {colorSchemes.map((scheme) => (
               <FunnelChart
@@ -79,4 +81,6 @@ export default function FunnelImprovementsDemo() {
       </div>
     </div>
   );
-}
+};
+
+export default withAuth(FunnelImprovementsDemo);

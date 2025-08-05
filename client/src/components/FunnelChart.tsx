@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// client/src/components/FunnelChart.tsx
 import React from 'react';
 import { FunnelChartProps, FunnelSegment } from '@/types/analytics';
 
