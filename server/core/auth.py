@@ -1,4 +1,4 @@
-# server/core/auth.py
+# server/core/auth.py - FIXED to match your token payload
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer 
 from jose import JWTError, jwt 
@@ -7,11 +7,9 @@ from pydantic import ValidationError
 from server.core.config import settings
 from server.crud import user as crud_user 
 
-
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
 async def get_current_user(token: str = Depends(reusable_oauth2)) -> dict:
-
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -21,9 +19,11 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> dict:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-        user_id: str = payload.get("id")
-        user_role: str = payload.get("role")
-        user_email: str = payload.get("sub") 
+        
+        user_id: str = payload.get("userId")     
+        user_role: str = payload.get("role") 
+        user_email: str = payload.get("email")    
+        
         if user_id is None or user_role is None or user_email is None:
             raise credentials_exception
         
@@ -33,6 +33,7 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> dict:
 
         return {
             "id": str(user_in_db.id),
+            "userId": str(user_in_db.id),  
             "email": user_in_db.email,
             "name": user_in_db.name,
             "role": user_in_db.role
@@ -40,4 +41,19 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> dict:
     except (JWTError, ValidationError):
         raise credentials_exception
 
+# Role-based access control
+async def get_current_admin(current_user: dict = Depends(get_current_user)) -> dict:
+    if current_user["role"] != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+    return current_user
 
+async def get_current_counselor_or_admin(current_user: dict = Depends(get_current_user)) -> dict:
+    if current_user["role"] not in ["counselor", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+    return current_user

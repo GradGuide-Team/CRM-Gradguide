@@ -114,7 +114,7 @@ async def get_all_students(
 ) -> List[StudentPublic]:
     query_set = Student.objects
 
-    if current_user_role == "member":
+    if current_user_role == "counselor":
         query_set = query_set.filter(created_by=ObjectId(current_user_id))
 
     # Add search filters
@@ -166,7 +166,7 @@ async def get_student_by_id(
 
     query_set = Student.objects(id=student_id)
 
-    if current_user_role == "member":
+    if current_user_role == "counselor":
         query_set = query_set.filter(created_by=ObjectId(current_user_id))
 
     student = query_set.first()
@@ -207,7 +207,7 @@ async def update_application_status(
         return None
     
     query_set = Student.objects(id=student_id)
-    if current_user_role == "member":
+    if current_user_role == "counselor":
         query_set = query_set.filter(created_by=ObjectId(current_user_id))
 
     student = query_set.first()
@@ -267,7 +267,7 @@ async def add_university_note(
         return None
     
     query_set = Student.objects(id=student_id)
-    if current_user_role == "member":
+    if current_user_role == "counselor":
         query_set = query_set.filter(created_by=ObjectId(current_user_id))
 
     student = query_set.first()
@@ -305,7 +305,7 @@ async def add_overview_note(
         return None
     
     query_set = Student.objects(id=student_id)
-    if current_user_role == "member":
+    if current_user_role == "counselor":
         query_set = query_set.filter(created_by=ObjectId(current_user_id))
 
     student = query_set.first()
@@ -340,7 +340,7 @@ async def update_student(
         return None
     
     query_set = Student.objects(id=student_id)
-    if current_user_role == "member":
+    if current_user_role == "counselor":
         query_set = query_set.filter(created_by=ObjectId(current_user_id))
 
     student = query_set.first()
@@ -458,7 +458,7 @@ async def delete_student(
     
     query_set = Student.objects(id=student_id)
     
-    if current_user_role == "member":
+    if current_user_role == "counselor":
         query_set = query_set.filter(created_by=ObjectId(current_user_id))
     
     student = query_set.first()
@@ -485,7 +485,7 @@ async def get_student_analytics(
     # Base query with role-based filtering
     print(f"Starting analytics for user {current_user_id} with role {current_user_role}")
     query_set = Student.objects
-    if current_user_role == "member":
+    if current_user_role == "counselor":
         query_set = query_set.filter(created_by=ObjectId(current_user_id))
 
     students = list(query_set)

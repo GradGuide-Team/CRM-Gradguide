@@ -221,7 +221,7 @@ The analytics endpoint MUST be placed before the generic `{student_id}` route:
 ### Role-Based Access Control
 Analytics respects user roles:
 - **Admin users**: See all students
-- **Member users**: See only students they created
+- **counselor users**: See only students they created
 
 ### Performance Considerations
 - Data is cached for 5 minutes on frontend

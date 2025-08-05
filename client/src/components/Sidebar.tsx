@@ -61,7 +61,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
               </div>
               <div>
                 <p className="text-sm font-medium text-white">
-                  {user?.email || 'Team Member'}
+                  {user?.email || 'Team counselor'}
                 </p>
                 <p className="text-xs text-blue-200">Application Team</p>
               </div>

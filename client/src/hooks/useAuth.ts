@@ -104,7 +104,7 @@ export const useAuth = () => {
     }
   };
 
-  const signup = async (name: string, email: string, password: string, role: string = "member") => {
+  const signup = async (name: string, email: string, password: string, role: string = "counselor") => {
     setLoading(true);
     setError(null);
     try {
