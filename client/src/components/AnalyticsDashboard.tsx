@@ -67,15 +67,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ classNam
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Header with Key Metrics */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
-        <h1 className="text-2xl font-bold mb-4">Student Analytics Dashboard</h1>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white/10 rounded-lg p-4">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4 sm:p-6 text-white shadow-lg">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4">Student Analytics Dashboard</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-all duration-200">
             <div className="flex items-center space-x-2">
-              <Users className="h-5 w-5" />
+              <Users className="h-5 w-5 flex-shrink-0" />
               <span className="text-sm font-medium">Total Students</span>
             </div>
-            <p className="text-2xl font-bold mt-1">{analytics.total_students}</p>
+            <p className="text-2xl font-bold mt-1">{analytics.total_students.toLocaleString()}</p>
           </div>
           
           <div className="bg-white/10 rounded-lg p-4">
@@ -111,81 +111,106 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ classNam
       </div>
 
       {/* Main Funnel Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* Application Path Funnel */}
-        <FunnelChart
-          title="Application Path Distribution"
-          data={analytics.application_path_funnel}
-          colorScheme="blue"
-          onSegmentClick={(segment, data) => handleSegmentClick('application_path', segment, data)}
-        />
+        <div className="transform transition-all duration-200 hover:scale-[1.02]">
+          <FunnelChart
+            title="Application Path Distribution"
+            data={analytics.application_path_funnel}
+            colorScheme="blue"
+            onSegmentClick={(segment, data) => handleSegmentClick('application_path', segment, data)}
+            height={350}
+          />
+        </div>
 
         {/* Overall Stage Funnel */}
-        <FunnelChart
-          title="Student Journey Stages"
-          data={analytics.overall_stage_funnel}
-          colorScheme="green"
-          onSegmentClick={(segment, data) => handleSegmentClick('overall_stage', segment, data)}
-        />
+        <div className="transform transition-all duration-200 hover:scale-[1.02]">
+          <FunnelChart
+            title="Student Journey Stages"
+            data={analytics.overall_stage_funnel}
+            colorScheme="green"
+            onSegmentClick={(segment, data) => handleSegmentClick('overall_stage', segment, data)}
+            height={350}
+          />
+        </div>
 
         {/* Document Completion Funnel */}
-        <FunnelChart
-          title="Document Completion Status"
-          data={analytics.document_completion_funnel}
-          colorScheme="orange"
-          onSegmentClick={(segment, data) => handleSegmentClick('document_completion', segment, data)}
-        />
+        <div className="transform transition-all duration-200 hover:scale-[1.02]">
+          <FunnelChart
+            title="Document Completion Status"
+            data={analytics.document_completion_funnel}
+            colorScheme="orange"
+            onSegmentClick={(segment, data) => handleSegmentClick('document_completion', segment, data)}
+            height={350}
+          />
+        </div>
 
         {/* University Application Funnel */}
-        <FunnelChart
-          title="University Application Status"
-          data={analytics.university_application_funnel}
-          colorScheme="purple"
-          onSegmentClick={(segment, data) => handleSegmentClick('university_application', segment, data)}
-        />
+        <div className="transform transition-all duration-200 hover:scale-[1.02]">
+          <FunnelChart
+            title="University Application Status"
+            data={analytics.university_application_funnel}
+            colorScheme="purple"
+            onSegmentClick={(segment, data) => handleSegmentClick('university_application', segment, data)}
+            height={350}
+          />
+        </div>
       </div>
 
       {/* Visa Process Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FunnelChart
-          title="Visa Decision Status"
-          data={analytics.visa_process_funnel.status_distribution}
-          colorScheme="red"
-          onSegmentClick={(segment, data) => handleSegmentClick('visa_status', segment, data)}
-        />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+        <div className="transform transition-all duration-200 hover:scale-[1.02]">
+          <FunnelChart
+            title="Visa Decision Status"
+            data={analytics.visa_process_funnel.status_distribution}
+            colorScheme="red"
+            onSegmentClick={(segment, data) => handleSegmentClick('visa_status', segment, data)}
+            height={350}
+          />
+        </div>
 
-        <FunnelChart
-          title="Visa Process Steps"
-          data={analytics.visa_process_funnel.process_steps}
-          colorScheme="blue"
-          onSegmentClick={(segment, data) => handleSegmentClick('visa_process', segment, data)}
-        />
+        <div className="transform transition-all duration-200 hover:scale-[1.02]">
+          <FunnelChart
+            title="Visa Process Steps"
+            data={analytics.visa_process_funnel.process_steps}
+            colorScheme="blue"
+            onSegmentClick={(segment, data) => handleSegmentClick('visa_process', segment, data)}
+            height={350}
+          />
+        </div>
       </div>
 
       {/* Distribution Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FunnelChart
-          title="Country Distribution"
-          data={analytics.country_distribution}
-          colorScheme="green"
-          onSegmentClick={(segment, data) => handleSegmentClick('country', segment, data)}
-        />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+        <div className="transform transition-all duration-200 hover:scale-[1.02]">
+          <FunnelChart
+            title="Country Distribution"
+            data={analytics.country_distribution}
+            colorScheme="green"
+            onSegmentClick={(segment, data) => handleSegmentClick('country', segment, data)}
+            height={350}
+          />
+        </div>
 
-        <FunnelChart
-          title="Counselor Distribution"
-          data={analytics.counselor_distribution}
-          colorScheme="purple"
-          onSegmentClick={(segment, data) => handleSegmentClick('counselor', segment, data)}
-        />
+        <div className="transform transition-all duration-200 hover:scale-[1.02]">
+          <FunnelChart
+            title="Counselor Distribution"
+            data={analytics.counselor_distribution}
+            colorScheme="purple"
+            onSegmentClick={(segment, data) => handleSegmentClick('counselor', segment, data)}
+            height={350}
+          />
+        </div>
       </div>
 
       {/* Refresh Info */}
-      <div className="text-center text-sm text-gray-500 mt-8">
-        <p>Data refreshes automatically every 30 seconds</p>
+      <div className="text-center text-sm text-gray-500 mt-8 p-4 bg-gray-50 rounded-lg">
+        <p className="mb-2">Data refreshes automatically every 30 seconds</p>
         <button
           onClick={() => refetch()}
-          className="mt-2 text-blue-500 hover:text-blue-700 underline"
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
         >
+          <TrendingUp className="w-4 h-4 mr-2" />
           Refresh Now
         </button>
       </div>
